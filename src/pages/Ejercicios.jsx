@@ -123,7 +123,10 @@ export default function Ejercicios() {
                 src={ej.imagen}
                 alt={ej.nombre}
                 className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-gym-dark"
-                onError={e => { e.target.style.display = 'none' }}
+                onError={e => { 
+                  console.warn('Image failed:', ej.imagen)
+                  e.target.style.display = 'none' 
+                }}
               />
             )}
             <div className="flex-1 min-w-0">

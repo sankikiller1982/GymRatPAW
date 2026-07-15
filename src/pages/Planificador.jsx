@@ -295,7 +295,7 @@ function ExerciseDrawer({ diaIdx, filteredExercises, onClose, onAdd, searchEx, s
           {filteredExercises.map(ej => (
             <button key={ej.id} onClick={() => onAdd(diaIdx, ej)} className="w-full text-left p-3 rounded-xl hover:bg-gym-dark-border transition-colors flex items-center gap-3">
               {ej.imagen ? (
-                <img src={ej.imagen} alt={ej.nombre} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gym-dark" onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }} />
+                <img src={ej.imagen} alt={ej.nombre} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gym-dark" onError={e => { e.target.style.display = 'none' }} />
               ) : null}
               <div className={`w-10 h-10 rounded-lg bg-gym-orange/10 flex items-center justify-center text-gym-orange text-xs font-bold flex-shrink-0 ${ej.imagen ? 'hidden' : ''}`}>
                 {ej.categoria?.charAt(0) || '?'}
