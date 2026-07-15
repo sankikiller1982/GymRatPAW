@@ -217,7 +217,7 @@ const [observaciones, setObservaciones] = useState('')
                     onRemove={removeExercise}
                     onUpdate={updateExercise}
                   />
-                ))}
+))}
               </div>
             </SortableContext>
           </DndContext>
@@ -262,8 +262,25 @@ const [observaciones, setObservaciones] = useState('')
             </div>
           </div>
           <div className="flex-1 overflow-y-auto space-y-1 pt-2">
-                {filteredExercises.map(ej => (
-                  <button key={ej.id} onClick={() => addExercise(ej)} className="w-full text-left p-3 rounded-xl hover:bg-gym-dark-border transition-colors flex items-center gap-3">
+                {filteredExercises.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400">
+                    {ejercicios.length === 0 ? (
+                      <>
+                        <p className="font-medium">No hay ejercicios disponibles</p>
+                        <p className="text-xs mt-1">Ve a la pestaña <strong>Ejercicios</strong> y toca el botón 🔄 para importar el dataset</p>
+                      </>
+                    ) : (
+                      <p>No se encontraron ejercicios con ese filtro</p>
+                    )}
+                  </div>
+                ) : (
+                  filteredExercises.map(ej => (
+                    <button 
+                      key={ej.id} 
+                      onClick={() => { console.log('Click ejercicio:', ej.nombre); addExercise(ej); }}
+                      className="w-full text-left p-3 rounded-xl hover:bg-gym-dark-border transition-colors flex items-center gap-3 cursor-pointer"
+                      style={{ cursor: 'pointer' }}
+                    >
                   {ej.imagen ? (
                     <img src={ej.imagen} alt={ej.nombre} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gym-dark" onError={e => { e.target.style.display = 'none' }} />
                   ) : null}
@@ -275,7 +292,7 @@ const [observaciones, setObservaciones] = useState('')
                     <p className="text-xs text-gray-400">{ej.categoria} · {ej.dificultad}</p>
                   </div>
                 </button>
-              ))}
+)))}
             </div>
           </div>
         </div>
