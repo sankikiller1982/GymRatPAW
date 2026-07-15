@@ -7,7 +7,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useAppStore } from '../stores/useAppStore'
 
 function SortableExercise({ item, ejercicio, onRemove, onUpdate }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.tempId })
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 }
 
   return (
@@ -19,12 +19,12 @@ function SortableExercise({ item, ejercicio, onRemove, onUpdate }) {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{ejercicio?.nombre || 'Ejercicio'}</p>
           <div className="flex gap-2 mt-1">
-            <input type="number" value={item.series} onChange={e => onUpdate(item.id, { series: e.target.value })} className="w-14 bg-gym-dark-card border border-gym-dark-border rounded-lg px-2 py-1 text-xs text-center" placeholder="Series" />
-            <input type="text" value={item.reps} onChange={e => onUpdate(item.id, { reps: e.target.value })} className="w-16 bg-gym-dark-card border border-gym-dark-border rounded-lg px-2 py-1 text-xs text-center" placeholder="Reps" />
-            <input type="text" value={item.peso} onChange={e => onUpdate(item.id, { peso: e.target.value })} className="w-16 bg-gym-dark-card border border-gym-dark-border rounded-lg px-2 py-1 text-xs text-center" placeholder="Peso" />
+            <input type="number" value={item.series} onChange={e => onUpdate(item.tempId, { series: e.target.value })} className="w-14 bg-gym-dark-card border border-gym-dark-border rounded-lg px-2 py-1 text-xs text-center" placeholder="Series" />
+            <input type="text" value={item.reps} onChange={e => onUpdate(item.tempId, { reps: e.target.value })} className="w-16 bg-gym-dark-card border border-gym-dark-border rounded-lg px-2 py-1 text-xs text-center" placeholder="Reps" />
+            <input type="text" value={item.peso} onChange={e => onUpdate(item.tempId, { peso: e.target.value })} className="w-16 bg-gym-dark-card border border-gym-dark-border rounded-lg px-2 py-1 text-xs text-center" placeholder="Peso" />
           </div>
         </div>
-        <button onClick={() => onRemove(item.id)} className="p-1.5 rounded-lg hover:bg-red-500/10">
+        <button onClick={() => onRemove(item.tempId)} className="p-1.5 rounded-lg hover:bg-red-500/10">
           <Trash2 size={14} className="text-red-400" />
         </button>
       </div>
