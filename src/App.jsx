@@ -16,20 +16,14 @@ import { useAppStore } from './stores/useAppStore'
 import { importExercisesFromDataset } from './lib/importDataset'
 
 export default function App() {
-  const loadAll = useAppStore(s => s.loadAlumnos)
+  const initialize = useAppStore(s => s.initialize)
   const loadEj = useAppStore(s => s.loadEjercicios)
-  const loadRut = useAppStore(s => s.loadRutinas)
-  const loadSes = useAppStore(s => s.loadSesiones)
-  const loadStats = useAppStore(s => s.loadStats)
 
   useEffect(() => {
     const init = async () => {
       await importExercisesFromDataset()
-      loadAll()
-      loadEj()
-      loadRut()
-      loadSes()
-      loadStats()
+      await initialize()
+      await loadEj() // reload exercises after import
     }
     init()
   }, [])
