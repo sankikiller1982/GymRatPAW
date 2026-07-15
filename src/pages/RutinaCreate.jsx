@@ -60,12 +60,11 @@ export default function RutinaCreate() {
   const [selectedAlumno, setSelectedAlumno] = useState(alumnoId ? Number(alumnoId) : '')
   const [nombre, setNombre] = useState('')
   const [objetivo, setObjetivo] = useState('')
-  const [fechaInicio, setFechaInicio] = useState('')
-  const [fechaFin, setFechaFin] = useState('')
-  const [observaciones, setObservaciones] = useState('')
+const [observaciones, setObservaciones] = useState('')
   const [exerciseItems, setExerciseItems] = useState([])
   const [showDrawer, setShowDrawer] = useState(false)
   const [searchEx, setSearchEx] = useState('')
+  const [filterCat, setFilterCat] = useState('')
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }))
 
@@ -86,9 +85,22 @@ export default function RutinaCreate() {
     Cardio: 'bg-rose-500/20 text-rose-400',
     Movilidad: 'bg-cyan-500/20 text-cyan-400',
     Personalizado: 'bg-gray-500/20 text-gray-400',
-  }
-
-  const [filterCat, setFilterCat] = useState('')
+}
+ 
+  const categoryChips = CATEGORIAS.map(cat => {
+    const count = ejercicios.filter(e => e.categoria === cat).length
+    return (
+      <button
+        key={cat}
+        onClick={() => setFilterCat(cat === filterCat ? '' : cat)}
+        className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+          filterCat === cat ? 'bg-gym-orange text-white' : `bg-gym-dark-card border border-gym-dark-border ${catColors[cat] || 'text-gray-400'}`
+        }`}
+      >
+        {cat} ({count})
+      </button>
+    )
+  })
 
   const filteredExercises = ejercicios.filter(e => {
     const matchSearch = e.nombre?.toLowerCase().includes(searchEx.toLowerCase())
@@ -139,8 +151,6 @@ export default function RutinaCreate() {
       alumnoId: Number(selectedAlumno),
       nombre,
       objetivo,
-      fechaInicio,
-      fechaFin,
       observaciones,
     })
     for (let i = 0; i < exerciseItems.length; i++) {
@@ -184,16 +194,6 @@ export default function RutinaCreate() {
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">Objetivo</label>
           <input type="text" value={objetivo} onChange={e => setObjetivo(e.target.value)} className="w-full bg-gym-dark-card border border-gym-dark-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gym-orange" placeholder="Ej: Hipertrofia, Fuerza..." />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Fecha inicio</label>
-            <input type="date" value={fechaInicio} onChange={e => setFechaInicio(e.target.value)} className="w-full bg-gym-dark-card border border-gym-dark-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gym-orange" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Fecha fin</label>
-            <input type="date" value={fechaFin} onChange={e => setFechaFin(e.target.value)} className="w-full bg-gym-dark-card border border-gym-dark-border rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gym-orange" />
-          </div>
         </div>
       </div>
 
@@ -257,23 +257,11 @@ export default function RutinaCreate() {
               >
                 Todos ({ejercicios.length})
               </button>
-{CATEGORIAS.map(cat => {
-                const count = ejercicios.filter(e => e.categoria === cat).length
-                return (
-                  <button
-                    key={cat}
-                    onClick={() => setFilterCat(cat === filterCat ? '' : cat)}
-                    className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                      filterCat === cat ? 'bg-gym-orange text-white' : `bg-gym-dark-card border border-gym-dark-border ${catColors[cat] || 'text-gray-400'}`
-                    }`}
-                  >
-                    {cat} ({count})
-                  </button>
-                )
-              })}
+              {categoryChips}
             </div>
             <div className="flex-1 overflow-y-auto space-y-1">
-                <button key={ej.id} onClick={() => addExercise(ej)} className="w-full text-left p-3 rounded-xl hover:bg-gym-dark-border transition-colors flex items-center gap-3">
+                {filteredExercises.map(ej => (
+                  <button key={ej.id} onClick={() => addExercise(ej)} className="w-full text-left p-3 rounded-xl hover:bg-gym-dark-border transition-colors flex items-center gap-3">
                   {ej.imagen ? (
                     <img src={ej.imagen} alt={ej.nombre} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gym-dark" onError={e => { e.target.style.display = 'none' }} />
                   ) : null}
