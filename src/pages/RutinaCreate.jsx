@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { ArrowLeft, Plus, Trash2, GripVertical, Search, X } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, GripVertical, Search, X, Filter } from 'lucide-react'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { SortableContext, useSortable, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -69,11 +69,33 @@ export default function RutinaCreate() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }))
 
-  const filteredExercises = ejercicios.filter(e =>
-    e.nombre?.toLowerCase().includes(searchEx.toLowerCase())
-  )
+  const CATEGORIAS = [
+    'Pecho', 'Espalda', 'Piernas', 'Glúteos', 'Hombros',
+    'Bíceps', 'Tríceps', 'Core', 'Cardio', 'Movilidad', 'Personalizado'
+  ]
 
-  let nextTempId = 0
+  const catColors = {
+    Pecho: 'bg-red-500/20 text-red-400',
+    Espalda: 'bg-blue-500/20 text-blue-400',
+    Piernas: 'bg-green-500/20 text-green-400',
+    Glúteos: 'bg-pink-500/20 text-pink-400',
+    Hombros: 'bg-yellow-500/20 text-yellow-400',
+    Bíceps: 'bg-orange-500/20 text-orange-400',
+    Tríceps: 'bg-violet-500/20 text-violet-400',
+    Core: 'bg-teal-500/20 text-teal-400',
+    Cardio: 'bg-rose-500/20 text-rose-400',
+    Movilidad: 'bg-cyan-500/20 text-cyan-400',
+    Personalizado: 'bg-gray-500/20 text-gray-400',
+  }
+
+  const [filterCat, setFilterCat] = useState('')
+
+  const filteredExercises = ejercicios.filter(e => {
+    const matchSearch = e.nombre?.toLowerCase().includes(searchEx.toLowerCase())
+    const matchCat = !filterCat || e.categoria === filterCat
+    return matchSearch && matchCat
+  })
+
   const addExercise = (ej) => {
     const tempId = `temp-${Date.now()}-${nextTempId++}`
     setExerciseItems(prev => [...prev, {
@@ -226,8 +248,31 @@ export default function RutinaCreate() {
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
               <input type="text" placeholder="Buscar..." value={searchEx} onChange={e => setSearchEx(e.target.value)} className="w-full bg-gym-dark border border-gym-dark-border rounded-xl pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-gym-orange" />
             </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 mb-3">
+              <button
+                onClick={() => setFilterCat('')}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  !filterCat ? 'bg-gym-orange text-white' : 'bg-gym-dark-card border border-gym-dark-border text-gray-400'
+                }`}
+              >
+                Todos ({ejercicios.length})
+              </button>
+{CATEGORIAS.map(cat => {
+                const count = ejercicios.filter(e => e.categoria === cat).length
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => setFilterCat(cat === filterCat ? '' : cat)}
+                    className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      filterCat === cat ? 'bg-gym-orange text-white' : `bg-gym-dark-card border border-gym-dark-border ${catColors[cat] || 'text-gray-400'}`
+                    }`}
+                  >
+                    {cat} ({count})
+                  </button>
+                )
+              })}
+            </div>
             <div className="flex-1 overflow-y-auto space-y-1">
-              {filteredExercises.map(ej => (
                 <button key={ej.id} onClick={() => addExercise(ej)} className="w-full text-left p-3 rounded-xl hover:bg-gym-dark-border transition-colors flex items-center gap-3">
                   {ej.imagen ? (
                     <img src={ej.imagen} alt={ej.nombre} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gym-dark" onError={e => { e.target.style.display = 'none' }} />
