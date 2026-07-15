@@ -24,7 +24,16 @@ export async function importExercisesFromDataset() {
 
     const exercises = data.map(ex => ({
       nombre: ex.name,
-      descripcion: `Ejercicio de ${ex.category}. Grupo muscular objetivo: ${ex.target}.`,
+      descripcion: ex.instructions?.es || ex.instructions?.en || `Ejercicio de ${ex.category}. Objetivo: ${ex.target}.`,
+      descripcion_en: ex.instructions?.en || '',
+      descripcion_es: ex.instructions?.es || '',
+      descripcion_it: ex.instructions?.it || '',
+      descripcion_tr: ex.instructions?.tr || '',
+      descripcion_ru: ex.instructions?.ru || '',
+      descripcion_zh: ex.instructions?.zh || '',
+      descripcion_hi: ex.instructions?.hi || '',
+      descripcion_pl: ex.instructions?.pl || '',
+      descripcion_ko: ex.instructions?.ko || '',
       categoria: CATEGORY_MAP[ex.category] || 'Personalizado',
       dificultad: 'Intermedio',
       duracion: '',
@@ -37,8 +46,10 @@ export async function importExercisesFromDataset() {
       equipamiento: ex.equipment || '',
       musculoObjetivo: ex.target || '',
       musculoGrupo: ex.muscle_group || '',
-      instrucciones: ex.instructions || {},
-      observaciones: `Músculo: ${ex.muscle_group || 'N/A'}. Equipamiento: ${ex.equipment || 'N/A'}`,
+      musculosSecundarios: Array.isArray(ex.secondary_muscles) ? ex.secondary_muscles.join(', ') : (ex.secondary_muscles || ''),
+      mediaId: ex.media_id || '',
+      attribution: ex.attribution || '© Gym visual — https://gymvisual.com/',
+      observaciones: `Equipamiento: ${ex.equipment || 'N/A'}. Músculo principal: ${ex.target || 'N/A'}. Músculos secundarios: ${Array.isArray(ex.secondary_muscles) ? ex.secondary_muscles.join(', ') : 'N/A'}.`,
       created_at: new Date().toISOString(),
     }))
 
