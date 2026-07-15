@@ -19,9 +19,30 @@ function SortableExercise({ item, ejercicio, onRemove, onUpdate }) {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium truncate">{ejercicio?.nombre || 'Ejercicio'}</p>
           <div className="flex gap-2 mt-1">
-            <input type="number" value={item.series} onChange={e => onUpdate(item.tempId, { series: e.target.value })} className="w-14 bg-gym-dark-card border border-gym-dark-border rounded-lg px-2 py-1 text-xs text-center" placeholder="Series" />
-            <input type="text" value={item.reps} onChange={e => onUpdate(item.tempId, { reps: e.target.value })} className="w-16 bg-gym-dark-card border border-gym-dark-border rounded-lg px-2 py-1 text-xs text-center" placeholder="Reps" />
-            <input type="text" value={item.peso} onChange={e => onUpdate(item.tempId, { peso: e.target.value })} className="w-16 bg-gym-dark-card border border-gym-dark-border rounded-lg px-2 py-1 text-xs text-center" placeholder="Peso" />
+            <input
+              type="number"
+              value={item.series}
+              onChange={e => onUpdate(item.tempId, { series: e.target.value })}
+              className="w-14 bg-gym-dark-card border border-gym-dark-border rounded-lg px-2 py-1 text-xs text-center"
+              placeholder="Series"
+              inputMode="numeric"
+            />
+            <input
+              type="text"
+              value={item.reps}
+              onChange={e => onUpdate(item.tempId, { reps: e.target.value })}
+              className="w-16 bg-gym-dark-card border border-gym-dark-border rounded-lg px-2 py-1 text-xs text-center"
+              placeholder="Reps"
+              inputMode="text"
+            />
+            <input
+              type="text"
+              value={item.peso}
+              onChange={e => onUpdate(item.tempId, { peso: e.target.value })}
+              className="w-16 bg-gym-dark-card border border-gym-dark-border rounded-lg px-2 py-1 text-xs text-center"
+              placeholder="Peso"
+              inputMode="decimal"
+            />
           </div>
         </div>
         <button onClick={() => onRemove(item.tempId)} className="p-1.5 rounded-lg hover:bg-red-500/10">
@@ -35,7 +56,7 @@ function SortableExercise({ item, ejercicio, onRemove, onUpdate }) {
 export default function RutinaCreate() {
   const { alumnoId } = useParams()
   const navigate = useNavigate()
-  const { ejercicios, alumnos, addRutina, addEjercicioToRutina, reorderRutinaEjercicios } = useAppStore()
+  const { ejercicios, alumnos, addRutina, addEjercicioToRutina } = useAppStore()
   const [selectedAlumno, setSelectedAlumno] = useState(alumnoId ? Number(alumnoId) : '')
   const [nombre, setNombre] = useState('')
   const [objetivo, setObjetivo] = useState('')
@@ -46,7 +67,7 @@ export default function RutinaCreate() {
   const [showDrawer, setShowDrawer] = useState(false)
   const [searchEx, setSearchEx] = useState('')
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }))
 
   const filteredExercises = ejercicios.filter(e =>
     e.nombre?.toLowerCase().includes(searchEx.toLowerCase())
@@ -65,6 +86,7 @@ export default function RutinaCreate() {
       notas: '',
     }])
     setShowDrawer(false)
+    setSearchEx('')
   }
 
   const removeExercise = (tempId) => {
@@ -178,7 +200,7 @@ export default function RutinaCreate() {
           </DndContext>
         ) : (
           <div className="text-center py-8 text-gray-400 border border-dashed border-gym-dark-border rounded-xl">
-            <p className="text-sm">Arrastra ejercicios desde la biblioteca</p>
+            <p className="text-sm">Agrega ejercicios desde la biblioteca</p>
           </div>
         )}
       </div>
@@ -197,7 +219,7 @@ export default function RutinaCreate() {
           <div className="bg-gym-dark-card w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-4 max-h-[70vh] flex flex-col">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-bold">Seleccionar Ejercicio</h3>
-              <button onClick={() => setShowDrawer(false)} className="p-2 rounded-lg hover:bg-gym-dark-border"><X size={18} /></button>
+              <button onClick={() => { setShowDrawer(false); setSearchEx('') }} className="p-2 rounded-lg hover:bg-gym-dark-border"><X size={18} /></button>
             </div>
             <div className="relative mb-3">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
