@@ -18,7 +18,7 @@ export async function importExercisesFromDataset() {
   if (count > 0) return count
 
   try {
-    const res = await fetch('/exercises-dataset/data/exercises.json')
+    const res = await fetch('/exercises.json')
     if (!res.ok) throw new Error('Dataset not found')
     const data = await res.json()
 

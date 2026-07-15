@@ -13,6 +13,7 @@ import Historial from './pages/Historial'
 import Planificador from './pages/Planificador'
 import Exportar from './pages/Exportar'
 import { useAppStore } from './stores/useAppStore'
+import { importExercisesFromDataset } from './lib/importDataset'
 
 export default function App() {
   const loadAll = useAppStore(s => s.loadAlumnos)
@@ -22,11 +23,15 @@ export default function App() {
   const loadStats = useAppStore(s => s.loadStats)
 
   useEffect(() => {
-    loadAll()
-    loadEj()
-    loadRut()
-    loadSes()
-    loadStats()
+    const init = async () => {
+      await importExercisesFromDataset()
+      loadAll()
+      loadEj()
+      loadRut()
+      loadSes()
+      loadStats()
+    }
+    init()
   }, [])
 
   return (
