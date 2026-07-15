@@ -4,7 +4,7 @@ import { Search, Plus, Trash2, Edit, X } from 'lucide-react'
 import { useAppStore } from '../stores/useAppStore'
 
 export default function Alumnos() {
-  const { alumnos, addAlumno, deleteAlumno } = useAppStore()
+  const { alumnos, addAlumno, deleteAlumno, showToast } = useAppStore()
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editando, setEditando] = useState(null)
@@ -21,8 +21,10 @@ export default function Alumnos() {
     if (!form.nombre.trim()) return
     if (editando) {
       await useAppStore.getState().updateAlumno(editando.id, form)
+      showToast('Alumno actualizado', 'success')
     } else {
       await addAlumno(form)
+      showToast('Alumno creado', 'success')
     }
     setForm({ nombre: '', telefono: '', whatsapp: '', edad: '', peso: '', altura: '', objetivo: '', observaciones: '' })
     setEditando(null)
@@ -47,6 +49,7 @@ export default function Alumnos() {
   const handleDelete = async (id) => {
     if (confirm('¿Eliminar este alumno?')) {
       await deleteAlumno(id)
+      showToast('Alumno eliminado', 'success')
     }
   }
 

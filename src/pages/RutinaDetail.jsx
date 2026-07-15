@@ -8,7 +8,7 @@ import db from '../lib/db'
 export default function RutinaDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { rutinas, alumnos, ejercicios, deleteRutina } = useAppStore()
+  const { rutinas, alumnos, ejercicios, deleteRutina, showToast } = useAppStore()
   const [items, setItems] = useState([])
 
   const rutina = rutinas.find(r => r.id === Number(id))
@@ -27,6 +27,7 @@ export default function RutinaDetail() {
   const handleDelete = async () => {
     if (confirm('¿Eliminar esta rutina?')) {
       await deleteRutina(rutina.id)
+      showToast('Rutina eliminada', 'success')
       navigate('/rutinas')
     }
   }
@@ -52,15 +53,18 @@ export default function RutinaDetail() {
         notas: item.notas,
       })
     }
+    showToast('Rutina duplicada', 'success')
     navigate(`/rutinas/${newId}`)
   }
 
   const handlePDF = () => {
     generateRoutinePDF(rutina, alumno, sorted, ejercicios)
+    showToast('PDF generado', 'success')
   }
 
   const handleShare = async () => {
     await sharePDF(rutina, alumno, sorted, ejercicios)
+    showToast('Compartido', 'success')
   }
 
   const catColors = {

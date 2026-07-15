@@ -2,10 +2,20 @@ import { Outlet, NavLink, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import { Menu, X } from 'lucide-react'
 import { useAppStore } from '../stores/useAppStore'
+import { useEffect } from 'react'
 
 export default function Layout() {
   const sidebarOpen = useAppStore(s => s.sidebarOpen)
   const toggleSidebar = useAppStore(s => s.toggleSidebar)
+  const toast = useAppStore(s => s.toast)
+  const clearToast = useAppStore(s => s.clearToast)
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(clearToast, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [toast, clearToast])
 
   return (
     <div className="flex h-screen overflow-hidden bg-gym-dark">
@@ -29,6 +39,22 @@ export default function Layout() {
         <div className="p-4">
           <Outlet />
         </div>
+        {toast && (
+          <div className="fixed bottom-24 left-4 right-4 lg:right-auto lg:w-80 z-50 animate-slide-up">
+            <div className={`bg-gym-dark-card border border-gym-dark-border rounded-xl p-4 flex items-center gap-3 shadow-lg ${
+              toast.type === 'success' ? 'border-green-500' :
+              toast.type === 'error' ? 'border-red-500' :
+              'border-blue-500'
+            }`}>
+              <div className="flex-1">
+                <p className="text-sm font-medium">{toast.msg}</p>
+              </div>
+              <button onClick={clearToast} className="p-1 text-gray-400 hover:text-white">
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+        )}
       </main>
       <BottomNav />
     </div>

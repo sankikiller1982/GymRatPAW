@@ -10,7 +10,7 @@ const CATEGORIAS = [
 const DIFICULTADES = ['Principiante', 'Intermedio', 'Avanzado']
 
 export default function Ejercicios() {
-  const { ejercicios, addEjercicio, deleteEjercicio, reimportEjercicios } = useAppStore()
+  const { ejercicios, addEjercicio, deleteEjercicio, reimportEjercicios, showToast } = useAppStore()
   const [search, setSearch] = useState('')
   const [filterCat, setFilterCat] = useState('')
   const [showForm, setShowForm] = useState(false)
@@ -24,9 +24,9 @@ export default function Ejercicios() {
     setReimporting(true)
     try {
       const count = await reimportEjercicios()
-      alert(`¡Importados ${count} ejercicios!`)
+      showToast(`¡Importados ${count} ejercicios!`, 'success')
     } catch (e) {
-      alert('Error: ' + e.message)
+      showToast('Error: ' + e.message, 'error')
     } finally {
       setReimporting(false)
     }
@@ -43,8 +43,10 @@ export default function Ejercicios() {
     if (!form.nombre.trim()) return
     if (editando) {
       await useAppStore.getState().updateEjercicio(editando.id, form)
+      showToast('Ejercicio actualizado', 'success')
     } else {
       await addEjercicio(form)
+      showToast('Ejercicio creado', 'success')
     }
     setForm(emptyForm)
     setEditando(null)
@@ -60,11 +62,13 @@ export default function Ejercicios() {
   const handleDuplicate = async (ej) => {
     const { id, created_at, ...rest } = ej
     await addEjercicio({ ...rest, nombre: `${rest.nombre} (copia)` })
+    showToast('Ejercicio duplicado', 'success')
   }
 
   const handleDelete = async (id) => {
     if (confirm('¿Eliminar este ejercicio?')) {
       await deleteEjercicio(id)
+      showToast('Ejercicio eliminado', 'success')
     }
   }
 

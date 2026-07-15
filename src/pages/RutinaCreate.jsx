@@ -56,7 +56,7 @@ function SortableExercise({ item, ejercicio, onRemove, onUpdate }) {
 export default function RutinaCreate() {
   const { alumnoId } = useParams()
   const navigate = useNavigate()
-  const { ejercicios, alumnos, addRutina, addEjercicioToRutina } = useAppStore()
+  const { ejercicios, alumnos, addRutina, addEjercicioToRutina, showToast } = useAppStore()
   const [selectedAlumno, setSelectedAlumno] = useState(alumnoId ? Number(alumnoId) : '')
   const [nombre, setNombre] = useState('')
   const [objetivo, setObjetivo] = useState('')
@@ -110,7 +110,7 @@ export default function RutinaCreate() {
 
   const handleSave = async () => {
     if (!selectedAlumno || !nombre.trim()) {
-      alert('Selecciona un alumno y ponle nombre a la rutina')
+      showToast('Selecciona un alumno y ponle nombre a la rutina', 'error')
       return
     }
     const rutinaId = await addRutina({
@@ -134,6 +134,7 @@ export default function RutinaCreate() {
         notas: item.notas,
       })
     }
+    showToast('Rutina creada correctamente', 'success')
     navigate(`/rutinas/${rutinaId}`)
   }
 

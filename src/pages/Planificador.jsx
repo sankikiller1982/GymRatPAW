@@ -12,7 +12,7 @@ const DIAS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', '
 const DIAS_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
 export default function Planificador() {
-  const { rutinas, ejercicios, alumnos } = useAppStore()
+  const { rutinas, ejercicios, alumnos, showToast } = useAppStore()
   const navigate = useNavigate()
   const [selectedRutina, setSelectedRutina] = useState('')
   const [weekPlan, setWeekPlan] = useState(
@@ -45,7 +45,7 @@ export default function Planificador() {
     for (const day of weekPlan) {
       await db.weeklyPlan.add({ rutinaId, dia: day.dia, activo: day.activo, ejercicios: day.ejercicios, notas: day.notas })
     }
-    alert('Plan semanal guardado')
+    showToast('Plan semanal guardado', 'success')
   }
 
   const toggleDay = (idx) => {
