@@ -121,40 +121,71 @@ export default function Ejercicios() {
 
       <div className="space-y-2">
         {filtered.map(ej => (
-          <div key={ej.id} className="bg-gym-dark-card border border-gym-dark-border rounded-xl p-3 flex items-center gap-3">
-            {ej.imagen && (
-              <img
-                src={ej.imagen}
-                alt={ej.nombre}
-                className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-gym-dark"
-                onError={e => { 
-                  console.warn('Image failed:', ej.imagen)
-                  e.target.style.display = 'none' 
-                }}
-              />
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="font-medium text-sm truncate">{ej.nombre}</p>
-              <div className="flex items-center gap-2 mt-1">
-                {ej.categoria && (
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${catColors[ej.categoria] || 'bg-gray-500/20 text-gray-400'}`}>
-                    {ej.categoria}
-                  </span>
-                )}
-                <span className="text-[10px] text-gray-400">{ej.dificultad}</span>
-                {ej.series && <span className="text-[10px] text-gray-400">{ej.series}×{ej.reps || '?'}</span>}
+          <div key={ej.id} className="bg-gym-dark-card border border-gym-dark-border rounded-xl overflow-hidden group">
+            {/* Imagen/GIF modo portada */}
+            <div className="relative aspect-[4/3] overflow-hidden bg-gym-dark">
+              {ej.gif ? (
+                <img
+                  src={ej.gif}
+                  alt={ej.nombre}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  onError={e => { 
+                    console.warn('GIF failed:', ej.gif)
+                    e.target.style.display = 'none' 
+                  }}
+                />
+              ) : ej.imagen ? (
+                <img
+                  src={ej.imagen}
+                  alt={ej.nombre}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  onError={e => { 
+                    console.warn('Image failed:', ej.imagen)
+                    e.target.style.display = 'none' 
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-gray-500">
+                  <span className="text-4xl font-bold opacity-20">{ej.categoria?.charAt(0) || '?'}</span>
+                </div>
+              )}
+              {/* Overlay con nombre */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-3">
+                <div className="absolute bottom-0 left-0 right-0">
+                  <p className="font-bold text-sm truncate text-white">{ej.nombre}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    {ej.categoria && (
+                      <span className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${catColors[ej.categoria] || 'bg-gray-500/20 text-gray-400'}`}>
+                        {ej.categoria}
+                      </span>
+                    )}
+                    <span className="text-[10px] text-gray-300">{ej.dificultad}</span>
+                    {ej.series && <span className="text-[10px] text-gray-300">{ej.series}×{ej.reps || '?'}</span>}
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="flex gap-1 flex-shrink-0">
-              <button onClick={() => handleDuplicate(ej)} className="p-2 rounded-lg hover:bg-gym-dark-border transition-colors" title="Duplicar">
-                <Copy size={14} className="text-gray-400" />
-              </button>
-              <button onClick={() => handleEdit(ej)} className="p-2 rounded-lg hover:bg-gym-dark-border transition-colors">
-                <Edit size={14} className="text-gray-400" />
-              </button>
-              <button onClick={() => handleDelete(ej.id)} className="p-2 rounded-lg hover:bg-red-500/10 transition-colors">
-                <Trash2 size={14} className="text-red-400" />
-              </button>
+            {/* Acciones */}
+            <div className="p-3 flex items-center justify-between border-t border-gym-dark-border bg-gym-dark/50">
+<div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400">{ej.series || '3'} series</span>
+                <span className="text-xs text-gray-400">·</span>
+                <span className="text-xs text-gray-400">{ej.reps || '10-12'} reps</span>
+                {ej.descanso && (
+                  <span className="text-xs text-gray-400">· {ej.descanso}s descanso</span>
+                )}
+              </div>
+              <div className="flex gap-1">
+                <button onClick={() => handleDuplicate(ej)} className="p-2 rounded-lg hover:bg-gym-dark-border transition-colors" title="Duplicar">
+                  <Copy size={14} className="text-gray-400" />
+                </button>
+                <button onClick={() => handleEdit(ej)} className="p-2 rounded-lg hover:bg-gym-dark-border transition-colors">
+                  <Edit size={14} className="text-gray-400" />
+                </button>
+                <button onClick={() => handleDelete(ej.id)} className="p-2 rounded-lg hover:bg-red-500/10 transition-colors">
+                  <Trash2 size={14} className="text-red-400" />
+                </button>
+              </div>
             </div>
           </div>
         ))}

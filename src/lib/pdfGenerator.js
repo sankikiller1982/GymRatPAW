@@ -2,574 +2,710 @@ import jsPDF from 'jspdf'
 import QRCode from 'qrcode'
 
 const MUSCLE_COLORS = {
-  Pecho: { r: 239, g: 68, b: 68 },
-  Espalda: { r: 59, g: 130, b: 246 },
-  Piernas: { r: 34, g: 197, b: 94 },
-  Glúteos: { r: 236, g: 72, b: 153 },
-  Hombros: { r: 234, g: 179, b: 8 },
-  Bíceps: { r: 249, g: 115, b: 22 },
-  Tríceps: { r: 139, g: 92, b: 246 },
-  Core: { r: 20, g: 184, b: 166 },
-  Cardio: { r: 244, g: 63, b: 94 },
-  Movilidad: { r: 6, g: 182, b: 212 },
-  Personalizado: { r: 107, g: 114, b: 128 },
+  pecho: { primary: '#EF4444', light: '#FEF2F2', dark: '#991B1B', name: 'Pecho' },
+  espalda: { primary: '#3B82F6', light: '#EFF6FF', dark: '#1E40AF', name: 'Espalda' },
+  piernas: { primary: '#22C55E', light: '#F0FDF4', dark: '#166534', name: 'Piernas' },
+  hombros: { primary: '#EAB308', light: '#FEFCE8', dark: '#854D0E', name: 'Hombros' },
+  biceps: { primary: '#F97316', light: '#FFF7ED', dark: '#9A3412', name: 'Bíceps' },
+  triceps: { primary: '#A855F7', light: '#F5F3FF', dark: '#6B21A8', name: 'Tríceps' },
+  pantorrillas: { primary: '#9CA3AF', light: '#F9FAFB', dark: '#374151', name: 'Pantorrillas' },
+  abdominales: { primary: '#06B6D4', light: '#ECFEFF', dark: '#164E63', name: 'Abdominales' },
+  gluteos: { primary: '#EC4899', light: '#FDF2F8', dark: '#9D174D', name: 'Glúteos' },
+  default: { primary: '#6366F1', light: '#EEF2FF', dark: '#312E81', name: 'General' },
 }
 
-const DARK = { r: 15, g: 23, b: 42 }
-const GRAY = { r: 100, g: 100, b: 100 }
-const LIGHT_BG = { r: 248, g: 250, b: 252 }
-const ORANGE = { r: 249, g: 115, b: 22 }
-
-function getColor(cat) {
-  return MUSCLE_COLORS[cat] || MUSCLE_COLORS.Personalizado
+const MUSCLE_ICONS = {
+  pecho: '💪',
+  espalda: '🏋️',
+  piernas: '🦵',
+  hombros: '🏋️‍♂️',
+  biceps: '💪',
+  triceps: '💪',
+  pantorrillas: '🦵',
+  abdominales: '🧘',
+  gluteos: '🍑',
+  default: '💪',
 }
 
-function drawRoundedRect(doc, x, y, w, h, r, fill, stroke) {
-  if (fill) doc.setFillColor(fill.r, fill.g, fill.b)
-  if (stroke) doc.setDrawColor(stroke.r, stroke.g, stroke.b)
-  doc.roundedRect(x, y, w, h, r, r, fill ? 'F' : stroke ? 'S' : 'FD')
+const COLORS = {
+  white: '#FFFFFF',
+  black: '#111827',
+  gray50: '#F9FAFB',
+  gray100: '#F3F4F6',
+  gray200: '#E5E7EB',
+  gray300: '#D1D5DB',
+  gray400: '#9CA3AF',
+  gray500: '#6B7280',
+  gray600: '#4B5563',
+  gray700: '#374151',
+  gray800: '#1F2937',
+  gray900: '#111827',
+  red50: '#FEF2F2',
+  red100: '#FEE2E2',
+  red500: '#EF4444',
+  red600: '#DC2626',
+  blue50: '#EFF6FF',
+  blue100: '#DBEAFE',
+  blue500: '#3B82F6',
+  blue600: '#2563EB',
+  green50: '#F0FDF4',
+  green100: '#DCFCE7',
+  green500: '#22C55E',
+  green600: '#16A34A',
+  yellow50: '#FEFCE8',
+  yellow100: '#FEF9C3',
+  yellow500: '#EAB308',
+  yellow600: '#CA8A04',
+  orange50: '#FFF7ED',
+  orange100: '#FFEDD5',
+  orange500: '#F97316',
+  orange600: '#EA580C',
+  purple50: '#F5F3FF',
+  purple100: '#EDE9FE',
+  purple500: '#A855F7',
+  purple600: '#9333EA',
+  pink50: '#FDF2F8',
+  pink100: '#FCE7F3',
+  pink500: '#EC4899',
+  pink600: '#DB2777',
+  cyan50: '#ECFEFF',
+  cyan100: '#CFFAFE',
+  cyan500: '#06B6D4',
+  cyan600: '#0891B2',
 }
 
-async function generateQR(url) {
-  if (!url) return null
-  try {
-    return await QRCode.toDataURL(url, { width: 128, margin: 1, color: { dark: '#1e293b', light: '#ffffff' } })
-  } catch {
-    return null
-  }
-}
-
-async function loadImageAsBase64(url) {
-  if (!url) return null
-  try {
-    const res = await fetch(url)
-    if (!res.ok) return null
-    const blob = await res.blob()
-    return new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onloadend = () => resolve(reader.result)
-      reader.readAsDataURL(blob)
-    })
-  } catch {
-    return null
-  }
-}
-
-function addFooter(doc, pageIdx, total) {
-  const pageW = 210
-  doc.setFontSize(7)
-  doc.setTextColor(180, 180, 180)
-  doc.setFont('helvetica', 'normal')
-  doc.text('GymRat — Gestor de Rutinas', 15, 290)
-  doc.text(`${pageIdx} / ${total}`, pageW - 15, 290, { align: 'right' })
-}
-
-export async function generateRoutinePDF(rutina, alumno, items, ejercicios) {
-  const doc = new jsPDF('p', 'mm', 'a4')
-  const pageW = 210
-  const pageH = 297
-  const margin = 15
-  const contentW = pageW - margin * 2
-  const sorted = [...items].sort((a, b) => a.orden - b.orden)
-
-  // Pre-load images and QR codes
-  const imageCache = {}
-  const qrCache = {}
-
-  for (const item of sorted) {
-    const ej = ejercicios.find(e => e.id === item.ejercicioId)
-    if (ej?.imagen) {
-      imageCache[item.ejercicioId] = await loadImageAsBase64(ej.imagen)
-    }
-    if (ej?.videoUrl) {
-      qrCache[item.ejercicioId] = await generateQR(ej.videoUrl)
-    }
+class PDFGenerator {
+  constructor() {
+    this.doc = new jsPDF('p', 'mm', 'a4')
+    this.pageWidth = 210
+    this.pageHeight = 297
+    this.margin = 20
+    this.contentWidth = this.pageWidth - this.margin * 2
+    this.currentY = 0
+    this.currentExerciseIndex = 0
+    this.totalExercises = 0
+    this.currentColor = COLORS.black
+    this.currentMuscle = 'default'
   }
 
-  let pageNum = 0
-
-  // ═══════════════════════════════════════════════════════════════
-  // COVER PAGE
-  // ═══════════════════════════════════════════════════════════════
-  pageNum++
-
-  for (let i = 0; i < pageH; i++) {
-    const t = i / pageH
-    doc.setFillColor(Math.round(249 - t * 200), Math.round(115 - t * 80), Math.round(22 + t * 20))
-    doc.rect(0, i, pageW, 1, 'F')
+  getColor(muscle) {
+    const m = muscle?.toLowerCase() || 'default'
+    return MUSCLE_COLORS[m] || MUSCLE_COLORS.default
   }
 
-  doc.setFillColor(255, 255, 255)
-  doc.setGState(new doc.GState({ opacity: 0.06 }))
-  doc.circle(pageW - 30, 50, 60, 'F')
-  doc.circle(30, pageH - 60, 45, 'F')
-  doc.setGState(new doc.GState({ opacity: 1 }))
-
-  doc.setFillColor(255, 255, 255)
-  doc.setGState(new doc.GState({ opacity: 0.15 }))
-  doc.roundedRect(margin, 35, 50, 50, 6, 6, 'F')
-  doc.setGState(new doc.GState({ opacity: 1 }))
-
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(28)
-  doc.setFont('helvetica', 'bold')
-  doc.text('GR', margin + 10, 68)
-
-  doc.setFontSize(42)
-  doc.setFont('helvetica', 'bold')
-  doc.text('GYMRAT', margin, 110)
-
-  doc.setFontSize(13)
-  doc.setFont('helvetica', 'normal')
-  doc.setGState(new doc.GState({ opacity: 0.8 }))
-  doc.text('RUTINA DE ENTRENAMIENTO', margin, 122)
-  doc.setGState(new doc.GState({ opacity: 1 }))
-
-  doc.setDrawColor(255, 255, 255)
-  doc.setGState(new doc.GState({ opacity: 0.3 }))
-  doc.setLineWidth(0.5)
-  doc.line(margin, 130, margin + 60, 130)
-  doc.setGState(new doc.GState({ opacity: 1 }))
-
-  drawRoundedRect(doc, margin, 145, contentW, 65, 5, { r: 255, g: 255, b: 255 })
-
-  doc.setTextColor(DARK.r, DARK.g, DARK.b)
-  doc.setFontSize(22)
-  doc.setFont('helvetica', 'bold')
-  doc.text(alumno?.nombre || 'Alumno', margin + 10, 165)
-
-  if (alumno?.objetivo) {
-    drawRoundedRect(doc, margin + 10, 170, doc.getTextWidth(alumno.objetivo) + 10, 8, 2, ORANGE)
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(7)
-    doc.setFont('helvetica', 'bold')
-    doc.text(alumno.objetivo, margin + 15, 175.5)
+  getIcon(muscle) {
+    const m = muscle?.toLowerCase() || 'default'
+    return MUSCLE_ICONS[m] || MUSCLE_ICONS.default
   }
 
-  const statY = 190
-  const statCols = [
-    { label: 'EDAD', value: alumno?.edad ? `${alumno.edad} años` : '—' },
-    { label: 'PESO', value: alumno?.peso ? `${alumno.peso} kg` : '—' },
-    { label: 'ALTURA', value: alumno?.altura ? `${alumno.altura} cm` : '—' },
-  ]
-  statCols.forEach((s, i) => {
-    const sx = margin + 10 + i * 55
-    doc.setFontSize(6)
-    doc.setTextColor(GRAY.r, GRAY.g, GRAY.b)
-    doc.text(s.label, sx, statY)
-    doc.setFontSize(11)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(DARK.r, DARK.g, DARK.b)
-    doc.text(s.value, sx, statY + 8)
-  })
-
-  const statsY = 225
-  const stats = [
-    { label: 'Ejercicios', value: `${sorted.length}`, color: ORANGE },
-    { label: 'Objetivo', value: rutina.objetivo || '—', color: { r: 59, g: 130, b: 246 } },
-    { label: 'Inicio', value: rutina.fechaInicio || '—', color: { r: 34, g: 197, b: 94 } },
-  ]
-  const cardW = (contentW - 8) / 3
-  stats.forEach((s, i) => {
-    const cx = margin + i * (cardW + 4)
-    drawRoundedRect(doc, cx, statsY, cardW, 35, 4, { r: 255, g: 255, b: 255 })
-    doc.setFillColor(s.color.r, s.color.g, s.color.b)
-    doc.rect(cx, statsY, cardW, 3, 'F')
-    doc.setFontSize(6)
-    doc.setTextColor(GRAY.r, GRAY.g, GRAY.b)
-    doc.setFont('helvetica', 'normal')
-    doc.text(s.label.toUpperCase(), cx + 6, statsY + 13)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(DARK.r, DARK.g, DARK.b)
-    const val = s.value.length > 12 ? s.value.substring(0, 12) + '…' : s.value
-    doc.text(val, cx + 6, statsY + 24)
-  })
-
-  doc.setTextColor(255, 255, 255)
-  doc.setGState(new doc.GState({ opacity: 0.5 }))
-  doc.setFontSize(7)
-  doc.setFont('helvetica', 'normal')
-  doc.text('GymRat — Gestor de Rutinas', margin, pageH - 10)
-  doc.text(new Date().toLocaleDateString('es-AR'), pageW - margin, pageH - 10, { align: 'right' })
-  doc.setGState(new doc.GState({ opacity: 1 }))
-
-  // ═══════════════════════════════════════════════════════════════
-  // EXERCISE CARDS (one page per exercise)
-  // ═══════════════════════════════════════════════════════════════
-  for (let idx = 0; idx < sorted.length; idx++) {
-    const item = sorted[idx]
-    const ej = ejercicios.find(e => e.id === item.ejercicioId)
-    const color = getColor(ej?.categoria)
-    pageNum++
-    doc.addPage()
-
-    doc.setFillColor(245, 247, 250)
-    doc.rect(0, 0, pageW, pageH, 'F')
-
-    doc.setFillColor(color.r, color.g, color.b)
-    doc.rect(0, 0, pageW, 55, 'F')
-
-    doc.setFillColor(255, 255, 255)
-    doc.setGState(new doc.GState({ opacity: 0.2 }))
-    doc.circle(pageW - 35, 27, 20, 'F')
-    doc.setGState(new doc.GState({ opacity: 1 }))
-
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(20)
-    doc.setFont('helvetica', 'bold')
-    doc.text(`${idx + 1}`, pageW - 37, 32)
-
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    doc.setGState(new doc.GState({ opacity: 0.8 }))
-    doc.text(`EJERCICIO ${idx + 1} DE ${sorted.length}`, margin, 18)
-    doc.setGState(new doc.GState({ opacity: 1 }))
-
-    doc.setFontSize(22)
-    doc.setFont('helvetica', 'bold')
-    const ejName = ej?.nombre || 'Ejercicio'
-    doc.text(ejName.length > 30 ? ejName.substring(0, 30) : ejName, margin, 38)
-
-    if (ej?.categoria) {
-      drawRoundedRect(doc, margin, 43, doc.getTextWidth(ej.categoria) + 10, 7, 2, { r: 255, g: 255, b: 255 })
-      doc.setTextColor(color.r, color.g, color.b)
-      doc.setFontSize(7)
-      doc.setFont('helvetica', 'bold')
-      doc.text(ej.categoria, margin + 5, 47.5)
-    }
-
-    // Exercise image (top right)
-    if (ej?.imagen && imageCache[item.ejercicioId]) {
-      try {
-        doc.addImage(imageCache[item.ejercicioId], 'JPEG', pageW - margin - 50, 5, 45, 45)
-        doc.setDrawColor(color.r, color.g, color.b)
-        doc.setLineWidth(0.5)
-        doc.roundedRect(pageW - margin - 50, 5, 45, 45, 3, 3, 'S')
-      } catch {}
-    }
-
-    // Main card
-    const cardY = 65
-    const cardH = 200
-    drawRoundedRect(doc, margin, cardY, contentW, cardH, 6, { r: 255, g: 255, b: 255 }, { r: 230, g: 230, b: 230 })
-
-    // Stats Row
-    const statsRowY = cardY + 8
-    const statsData = [
-      { label: 'Series', value: `${item.series}` },
-      { label: 'Reps', value: `${item.reps}` },
-      { label: 'Peso', value: item.peso ? `${item.peso} kg` : '—' },
-      { label: 'Descanso', value: `${item.tiempoDescanso}s` },
-    ]
-    const statCardW = (contentW - 16) / 4
-    statsData.forEach((s, i) => {
-      const sx = margin + 8 + i * (statCardW + 2)
-      drawRoundedRect(doc, sx, statsRowY, statCardW, 28, 4, LIGHT_BG)
-      doc.setFillColor(color.r, color.g, color.b)
-      doc.circle(sx + 6, statsRowY + 8, 2.5, 'F')
-      doc.setFontSize(6)
-      doc.setTextColor(GRAY.r, GRAY.g, GRAY.b)
-      doc.setFont('helvetica', 'normal')
-      doc.text(s.label.toUpperCase(), sx + 11, statsRowY + 9)
-      doc.setFontSize(13)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(DARK.r, DARK.g, DARK.b)
-      doc.text(s.value, sx + 6, statsRowY + 22)
-    })
-
-    // Description
-    let descY = statsRowY + 38
-    if (ej?.descripcion) {
-      doc.setFillColor(color.r, color.g, color.b)
-      doc.rect(margin + 8, descY, 2, 4, 'F')
-      doc.setFontSize(9)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(DARK.r, DARK.g, DARK.b)
-      doc.text('DESCRIPCIÓN', margin + 14, descY + 3.5)
-
-      descY += 8
-      doc.setFontSize(9)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(70, 70, 70)
-      const lines = doc.splitTextToSize(ej.descripcion, contentW - 20)
-      doc.text(lines, margin + 10, descY)
-      descY += lines.length * 4.5 + 6
-    }
-
-    // Notes
-    if (item.notas) {
-      drawRoundedRect(doc, margin + 8, descY, contentW - 16, 18, 4, { r: 255, g: 243, b: 205 })
-      doc.setFillColor(234, 179, 8)
-      doc.rect(margin + 8, descY, 3, 18, 'F')
-      doc.setTextColor(146, 64, 14)
-      doc.setFontSize(8)
-      doc.setFont('helvetica', 'bold')
-      doc.text('NOTA DEL ENTRENADOR', margin + 16, descY + 7)
-      doc.setFontSize(8)
-      doc.setFont('helvetica', 'normal')
-      doc.text(item.notas, margin + 16, descY + 14)
-      descY += 24
-    }
-
-    // Video QR
-    if (ej?.videoUrl && qrCache[item.ejercicioId]) {
-      descY += 4
-      drawRoundedRect(doc, margin + 8, descY, contentW - 16, 32, 4, LIGHT_BG)
-      try {
-        doc.addImage(qrCache[item.ejercicioId], 'PNG', margin + 12, descY + 3, 26, 26)
-      } catch {}
-      doc.setFontSize(9)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(DARK.r, DARK.g, DARK.b)
-      doc.text('VER VIDEO DEL EJERCICIO', margin + 44, descY + 11)
-      doc.setFontSize(7)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(GRAY.r, GRAY.g, GRAY.b)
-      const url = ej.videoUrl
-      doc.text(url.length > 50 ? url.substring(0, 50) + '…' : url, margin + 44, descY + 17)
-      doc.setFontSize(7)
-      doc.setTextColor(color.r, color.g, color.b)
-      doc.setFont('helvetica', 'bold')
-      doc.text('Escaneá con la cámara del celular', margin + 44, descY + 25)
-      descY += 38
-    }
-
-    // Series checklist
-    descY += 4
-    doc.setFillColor(color.r, color.g, color.b)
-    doc.rect(margin + 8, descY, 2, 4, 'F')
-    doc.setFontSize(9)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(DARK.r, DARK.g, DARK.b)
-    doc.text('CHECKLIST DE SERIES', margin + 14, descY + 3.5)
-    descY += 8
-
-    for (let s = 0; s < (item.series || 3); s++) {
-      drawRoundedRect(doc, margin + 8, descY, contentW - 16, 11, 3, LIGHT_BG)
-      doc.setDrawColor(180, 180, 180)
-      doc.setLineWidth(0.3)
-      doc.roundedRect(margin + 12, descY + 2.5, 6, 6, 1, 1, 'S')
-      doc.setFontSize(8)
-      doc.setFont('helvetica', 'normal')
-      doc.setTextColor(70, 70, 70)
-      doc.text(`Serie ${s + 1}`, margin + 22, descY + 7)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(DARK.r, DARK.g, DARK.b)
-      doc.text(`${item.reps} reps`, margin + 50, descY + 7)
-      if (item.peso) {
-        doc.setTextColor(color.r, color.g, color.b)
-        doc.text(`${item.peso} kg`, margin + 80, descY + 7)
-      }
-      doc.setFillColor(color.r, color.g, color.b)
-      doc.setGState(new doc.GState({ opacity: 0.15 }))
-      doc.circle(pageW - margin - 12, descY + 5.5, 4, 'F')
-      doc.setGState(new doc.GState({ opacity: 1 }))
-      descY += 13
-    }
-
-    addFooter(doc, pageNum, sorted.length + 2)
+  setColor(muscle) {
+    this.currentMuscle = muscle?.toLowerCase() || 'default'
+    this.currentColor = this.getColor(this.currentMuscle).primary
   }
 
-  // ═══════════════════════════════════════════════════════════════
-  // SUMMARY PAGE
-  // ═══════════════════════════════════════════════════════════════
-  pageNum++
-  doc.addPage()
-
-  doc.setFillColor(245, 247, 250)
-  doc.rect(0, 0, pageW, pageH, 'F')
-
-  doc.setFillColor(DARK.r, DARK.g, DARK.b)
-  doc.rect(0, 0, pageW, 50, 'F')
-
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(22)
-  doc.setFont('helvetica', 'bold')
-  doc.text('RESUMEN DE RUTINA', margin, 32)
-
-  // Stats row
-  const sumStatsY = 60
-  const sumStats = [
-    { label: 'EJERCICIOS', value: `${sorted.length}`, color: ORANGE },
-    { label: 'SERIES TOTALES', value: `${sorted.reduce((a, i) => a + (i.series || 3), 0)}`, color: { r: 59, g: 130, b: 246 } },
-    { label: 'DURACIÓN EST.', value: `~${Math.round(sorted.reduce((a, i) => a + ((i.series || 3) * 30 + (i.tiempoDescanso || 60)), 0) / 60)} min`, color: { r: 34, g: 197, b: 94 } },
-  ]
-  const sCardW = (contentW - 8) / 3
-  sumStats.forEach((s, i) => {
-    const sx = margin + i * (sCardW + 4)
-    drawRoundedRect(doc, sx, sumStatsY, sCardW, 28, 4, { r: 255, g: 255, b: 255 })
-    doc.setFillColor(s.color.r, s.color.g, s.color.b)
-    doc.rect(sx, sumStatsY, sCardW, 2.5, 'F')
-    doc.setFontSize(6)
-    doc.setTextColor(GRAY.r, GRAY.g, GRAY.b)
-    doc.setFont('helvetica', 'normal')
-    doc.text(s.label, sx + 6, sumStatsY + 12)
-    doc.setFontSize(14)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(DARK.r, DARK.g, DARK.b)
-    doc.text(s.value, sx + 6, sumStatsY + 23)
-  })
-
-  // Muscle distribution
-  const muscleCount = {}
-  sorted.forEach(item => {
-    const ej = ejercicios.find(e => e.id === item.ejercicioId)
-    const cat = ej?.categoria || 'Personalizado'
-    muscleCount[cat] = (muscleCount[cat] || 0) + 1
-  })
-
-  let barY = sumStatsY + 42
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(DARK.r, DARK.g, DARK.b)
-  doc.text('DISTRIBUCIÓN MUSCULAR', margin, barY)
-  barY += 8
-
-  const maxCount = Math.max(...Object.values(muscleCount), 1)
-  Object.entries(muscleCount).sort((a, b) => b[1] - a[1]).forEach(([cat, count]) => {
-    const c = getColor(cat)
-    const barW = (count / maxCount) * (contentW - 60)
-
-    drawRoundedRect(doc, margin, barY, contentW - 50, 10, 2, LIGHT_BG)
-    drawRoundedRect(doc, margin, barY, Math.max(barW, 4), 10, 2, { r: c.r, g: c.g, b: c.b })
-
-    doc.setFontSize(7)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(DARK.r, DARK.g, DARK.b)
-    doc.text(cat, margin + 3, barY + 7)
-
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(GRAY.r, GRAY.g, GRAY.b)
-    doc.text(`${count}`, pageW - margin - 8, barY + 7, { align: 'right' })
-
-    barY += 13
-  })
-
-  // Exercise list
-  barY += 8
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(DARK.r, DARK.g, DARK.b)
-  doc.text('LISTA DE EJERCICIOS', margin, barY)
-  barY += 8
-
-  sorted.forEach((item, idx) => {
-    const ej = ejercicios.find(e => e.id === item.ejercicioId)
-    const c = getColor(ej?.categoria)
-
-    drawRoundedRect(doc, margin, barY, contentW, 14, 3, { r: 255, g: 255, b: 255 })
-    doc.setFillColor(c.r, c.g, c.b)
-    doc.rect(margin, barY, 3, 14, 'F')
-    doc.setFillColor(c.r, c.g, c.b)
-    doc.setGState(new doc.GState({ opacity: 0.1 }))
-    doc.circle(margin + 12, barY + 7, 5, 'F')
-    doc.setGState(new doc.GState({ opacity: 1 }))
-    doc.setFontSize(8)
-    doc.setFont('helvetica', 'bold')
-    doc.setTextColor(255, 255, 255)
-    doc.text(`${idx + 1}`, margin + 10, barY + 9)
-    doc.setTextColor(DARK.r, DARK.g, DARK.b)
-    doc.setFontSize(8)
-    doc.setFont('helvetica', 'bold')
-    const name = ej?.nombre || 'Ejercicio'
-    doc.text(name.length > 35 ? name.substring(0, 35) + '…' : name, margin + 20, barY + 6)
-    doc.setFontSize(7)
-    doc.setFont('helvetica', 'normal')
-    doc.setTextColor(GRAY.r, GRAY.g, GRAY.b)
-    doc.text(`${item.series}×${item.reps} · ${item.peso ? item.peso + 'kg' : '—'} · ${item.tiempoDescanso}s`, margin + 20, barY + 11)
-    if (ej?.videoUrl) {
-      doc.setFillColor(34, 197, 94)
-      doc.circle(pageW - margin - 8, barY + 7, 3, 'F')
-      doc.setTextColor(255, 255, 255)
-      doc.setFontSize(5)
-      doc.text('▶', pageW - margin - 9.5, barY + 8.5)
-    }
-    barY += 16
-  })
-
-  // Signature area
-  barY += 10
-  doc.setDrawColor(200, 200, 200)
-  doc.setLineWidth(0.3)
-  doc.line(margin, barY, margin + 65, barY)
-  doc.line(pageW - margin - 65, barY, pageW - margin, barY)
-
-  doc.setFontSize(7)
-  doc.setFont('helvetica', 'normal')
-  doc.setTextColor(GRAY.r, GRAY.g, GRAY.b)
-  doc.text('Firma del Entrenador', margin, barY + 5)
-  doc.text('Firma del Alumno', pageW - margin - 65, barY + 5)
-  doc.text(new Date().toLocaleDateString('es-AR', { year: 'numeric', month: 'long', day: 'numeric' }), pageW / 2, barY + 5, { align: 'center' })
-
-  addFooter(doc, pageNum, sorted.length + 2)
-
-  const fileName = `Rutina-${alumno?.nombre || 'Alumno'}-${rutina.nombre || 'Rutina'}.pdf`
-  doc.save(fileName)
-  return fileName
-}
-
-export async function sharePDF(rutina, alumno, items, ejercicios) {
-  const doc = new jsPDF('p', 'mm', 'a4')
-  // Reuse the same logic but return blob
-  const pageW = 210
-  const pageH = 297
-  const margin = 15
-  const contentW = pageW - margin * 2
-  const sorted = [...items].sort((a, b) => a.orden - b.orden)
-
-  // Simple cover
-  for (let i = 0; i < pageH; i++) {
-    const t = i / pageH
-    doc.setFillColor(Math.round(249 - t * 200), Math.round(115 - t * 80), Math.round(22 + t * 20))
-    doc.rect(0, i, pageW, 1, 'F')
-  }
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(42)
-  doc.setFont('helvetica', 'bold')
-  doc.text('GYMRAT', margin, 110)
-  doc.setFontSize(13)
-  doc.setFont('helvetica', 'normal')
-  doc.text('RUTINA DE ENTRENAMIENTO', margin, 122)
-
-  doc.addPage()
-  doc.setFontSize(18)
-  doc.setFont('helvetica', 'bold')
-  doc.setTextColor(DARK.r, DARK.g, DARK.b)
-  doc.text('Rutina: ' + (rutina.nombre || ''), margin, 30)
-  doc.setFontSize(12)
-  doc.setFont('helvetica', 'normal')
-  doc.text('Alumno: ' + (alumno?.nombre || ''), margin, 42)
-
-  sorted.forEach((item, idx) => {
-    const ej = ejercicios.find(e => e.id === item.ejercicioId)
-    if (idx > 0) doc.addPage()
-    doc.setFontSize(16)
-    doc.setFont('helvetica', 'bold')
-    doc.text(`${idx + 1}. ${ej?.nombre || 'Ejercicio'}`, margin, 30)
-    doc.setFontSize(10)
-    doc.setFont('helvetica', 'normal')
-    doc.text(`${item.series}×${item.reps} · ${item.peso || '—'}kg · ${item.tiempoDescanso}s`, margin, 40)
-  })
-
-  const blob = doc.output('blob')
-  const file = new File([blob], `Rutina-${alumno?.nombre || 'Alumno'}.pdf`, { type: 'application/pdf' })
-
-  if (navigator.share) {
+  async addImageFromUrl(url, format = 'JPEG') {
+    if (!url) return null
     try {
-      await navigator.share({
-        title: `Rutina: ${rutina.nombre}`,
-        text: `Rutina de entrenamiento para ${alumno?.nombre || 'alumno'}`,
-        files: [file],
+      const response = await fetch(url)
+      const blob = await response.blob()
+      return new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onloadend = () => resolve(reader.result)
+        reader.readAsDataURL(blob)
       })
+    } catch {
+      return null
+    }
+  }
+
+  async generateQRCode(text) {
+    try {
+      return await QRCode.toDataURL(text, {
+        width: 120,
+        margin: 2,
+        color: { dark: '#111827', light: '#FFFFFF' },
+        errorCorrectionLevel: 'M',
+      })
+    } catch {
+      return null
+    }
+  }
+
+  addBackground(color = COLORS.gray50) {
+    this.doc.setFillColor(color)
+    this.doc.rect(0, 0, this.pageWidth, this.pageHeight, 'F')
+  }
+
+  addRoundedRect(x, y, w, h, r, fillColor, strokeColor = null, strokeWidth = 0) {
+    this.doc.setFillColor(fillColor)
+    if (strokeColor) {
+      this.doc.setDrawColor(strokeColor)
+      this.doc.setLineWidth(strokeWidth)
+    }
+    this.doc.roundedRect(x, y, w, h, r, r, strokeColor ? 'FD' : 'F')
+  }
+
+  addShadow(x, y, w, h, r, opacity = 0.1) {
+    this.doc.setFillColor('rgba(0,0,0,' + opacity + ')')
+    this.doc.roundedRect(x + 2, y + 4, w, h, r, r, 'F')
+  }
+
+  addText(text, x, y, options = {}) {
+    const {
+      size = 10,
+      color = COLORS.black,
+      font = 'helvetica',
+      style = 'normal',
+      align = 'left',
+      maxWidth = null,
+      lineHeight = 1.4,
+    } = options
+
+    this.doc.setFontSize(size)
+    this.doc.setFont(font, style)
+    this.doc.setTextColor(color)
+
+    if (maxWidth) {
+      const lines = this.doc.splitTextToSize(text, maxWidth)
+      lines.forEach((line, i) => {
+        this.doc.text(line, x, y + i * size * lineHeight, { align })
+      })
+      return lines.length * size * lineHeight
+    } else {
+      this.doc.text(text, x, y, { align })
+      return size
+    }
+  }
+
+  addIcon(icon, x, y, size = 12, color = COLORS.black) {
+    this.doc.setFontSize(size)
+    this.doc.setTextColor(color)
+    this.doc.text(icon, x, y)
+  }
+
+  addDivider(x, y, w, color = COLORS.gray200, thickness = 1) {
+    this.doc.setDrawColor(color)
+    this.doc.setLineWidth(thickness)
+    this.doc.line(x, y, x + w, y)
+  }
+
+  addDottedDivider(x, y, w, color = COLORS.gray300, dashLength = 2, gapLength = 2) {
+    this.doc.setDrawColor(color)
+    this.doc.setLineWidth(1)
+    this.doc.setLineDashPattern([dashLength, gapLength])
+    this.doc.line(x, y, x + w, y)
+    this.doc.setLineDashPattern([])
+  }
+
+  checkNewPage(minSpace = 50) {
+    if (this.currentY + minSpace > this.pageHeight - this.margin) {
+      this.addPage()
+      return true
+    }
+    return false
+  }
+
+  addPage() {
+    this.doc.addPage()
+    this.currentY = this.margin
+  }
+
+  addFooter(pageNum, totalPages) {
+    const y = this.pageHeight - 15
+    this.doc.setDrawColor(this.currentColor)
+    this.doc.setLineWidth(1)
+    this.doc.line(this.margin, y - 5, this.pageWidth - this.margin, y - 5)
+
+    this.addText(`${this.totalExercises > 0 ? `Ejercicio ${this.currentExerciseIndex} de ${this.totalExercises}` : ''}  |  Página ${pageNum} de ${totalPages}`,
+      this.pageWidth / 2, y + 3, { size: 8, color: COLORS.gray500, align: 'center' })
+
+    this.addProgressBar(this.margin, y - 12, this.contentWidth, 4,
+      this.totalExercises > 0 ? this.currentExerciseIndex / this.totalExercises : 0)
+  }
+
+  addProgressBar(x, y, w, h, progress) {
+    this.addRoundedRect(x, y, w, h, h / 2, COLORS.gray200)
+    if (progress > 0) {
+      this.addRoundedRect(x, y, Math.max(w * progress, 4), h, h / 2, this.currentColor)
+    }
+  }
+
+  async generateCoverPage(data) {
+    const { alumno, rutina, ejercicios, stats } = data
+    this.currentY = this.margin
+
+    this.setColor(rutina?.muscleGroup || ejercicios?.[0]?.muscleGroup)
+
+    this.addBackground(this.getColor(this.currentMuscle).light)
+
+    const color = this.getColor(this.currentMuscle)
+
+    this.addRoundedRect(this.margin, this.currentY, this.contentWidth, 180, 24, color.primary)
+    this.doc.setFillColor(color.dark)
+    this.doc.rect(this.margin, this.currentY, this.contentWidth, 180, 'F')
+    this.doc.clip()
+
+    this.doc.setFillColor(color.primary)
+    for (let i = 0; i < 8; i++) {
+      const x = this.margin + (i * 28)
+      this.doc.circle(x, this.currentY + 90, 40 + i * 10, 'F')
+    }
+
+    this.doc.setGState(new this.doc.GState({ opacity: 0.15 }))
+    this.doc.setFillColor(COLORS.white)
+    for (let i = 0; i < 12; i++) {
+      const x = this.margin + (i * 18)
+      this.doc.rect(x, this.currentY + 20, 8, 160, 'F')
+    }
+    this.doc.setGState(new this.doc.GState({ opacity: 1 }))
+    this.doc.clip()
+
+    this.currentY += 30
+    this.addIcon('🏋️', this.pageWidth / 2, this.currentY, 48, COLORS.white)
+    this.currentY += 55
+
+    this.addText('WORKOUT PLANNER PRO', this.pageWidth / 2, this.currentY,
+      { size: 28, color: COLORS.white, style: 'bold', align: 'center' })
+    this.currentY += 16
+
+    this.addText('Plan de Entrenamiento Personalizado', this.pageWidth / 2, this.currentY,
+      { size: 14, color: 'rgba(255,255,255,0.85)', align: 'center' })
+    this.currentY += 40
+
+    const statsRowY = this.currentY
+    const statW = this.contentWidth / 3
+
+    this.addStatCard(this.margin + 10, statsRowY, statW - 20, 50,
+      alumno?.nombre || 'Alumno', 'ALUMNO', COLORS.white, 0.9)
+    this.addStatCard(this.margin + 10 + statW, statsRowY, statW - 20, 50,
+      this.formatDate(rutina?.fechaCreacion), 'FECHA', COLORS.white, 0.9)
+    this.addStatCard(this.margin + 10 + statW * 2, statsRowY, statW - 20, 50,
+      rutina?.objetivo || 'General', 'OBJETIVO', COLORS.white, 0.9)
+
+    this.currentY = statsRowY + 70
+    this.addText('DETALLES DEL ALUMNO', this.margin + 10, this.currentY,
+      { size: 11, color: COLORS.white, style: 'bold' })
+    this.currentY += 12
+
+    const details = []
+    if (alumno?.peso) details.push({ label: 'Peso', value: `${alumno.peso} kg`, icon: '⚖️' })
+    if (alumno?.altura) details.push({ label: 'Altura', value: `${alumno.altura} cm`, icon: '📏' })
+    if (alumno?.edad) details.push({ label: 'Edad', value: `${alumno.edad} años`, icon: '🎂' })
+    if (alumno?.nivel) details.push({ label: 'Nivel', value: alumno.nivel, icon: '📊' })
+
+    const detailW = this.contentWidth / details.length
+    details.forEach((d, i) => {
+      const x = this.margin + 10 + i * detailW
+      this.addIcon(d.icon, x + 5, this.currentY, 14, COLORS.white)
+      this.addText(d.label, x + 5, this.currentY + 16, { size: 9, color: 'rgba(255,255,255,0.7)', style: 'normal' })
+      this.addText(d.value, x + 5, this.currentY + 24, { size: 13, color: COLORS.white, style: 'bold' })
+    })
+
+    this.currentY += 50
+    this.addDivider(this.margin + 10, this.currentY, this.contentWidth - 20, 'rgba(255,255,255,0.3)')
+    this.currentY += 12
+
+    const summaryItems = [
+      { label: 'Ejercicios', value: `${ejercicios?.length || 0}`, icon: '🏋️' },
+      { label: 'Tiempo Est.', value: `${stats?.tiempoEstimado || 0} min`, icon: '⏱️' },
+      { label: 'Grupos Musc.', value: stats?.gruposMusculares || 0, icon: '💪' },
+      { label: 'Volumen', value: `${stats?.volumenTotal || 0} kg`, icon: '📊' },
+      { label: 'Videos', value: ejercicios?.filter(e => e.videoUrl).length || 0, icon: '🎥' },
+      { label: 'Dificultad', value: stats?.dificultadPromedio || 'Media', icon: '📈' },
+    ]
+
+    const itemW = this.contentWidth / 3
+    summaryItems.forEach((item, i) => {
+      const col = i % 3
+      const row = Math.floor(i / 3)
+      const x = this.margin + 10 + col * (itemW - 4)
+      const y = this.currentY + row * 35
+      this.addStatCard(x, y, itemW - 8, 30, item.value, item.label, COLORS.white, 0.9, item.icon)
+    })
+
+    this.currentY += Math.ceil(summaryItems.length / 3) * 35 + 20
+    this.addText('Generado por Workout Planner Pro', this.pageWidth / 2, this.pageHeight - 25,
+      { size: 9, color: 'rgba(255,255,255,0.5)', align: 'center' })
+    this.addText(this.formatDate(new Date()), this.pageWidth / 2, this.pageHeight - 18,
+      { size: 9, color: 'rgba(255,255,255,0.5)', align: 'center' })
+  }
+
+  addStatCard(x, y, w, h, value, label, color, opacity = 1, icon = '') {
+    this.addRoundedRect(x, y, w, h, 12, 'rgba(255,255,255,' + 0.15 + ')', 'rgba(255,255,255,' + (0.2 * opacity) + ')', 1)
+    if (icon) {
+      this.addIcon(icon, x + w / 2, y + 16, 16, COLORS.white)
+    }
+    this.addText(value, x + w / 2, y + (icon ? 30 : 18), { size: 18, color: COLORS.white, style: 'bold', align: 'center' })
+    this.addText(label, x + w / 2, y + h - 8, { size: 8, color: 'rgba(255,255,255,0.7)', align: 'center' })
+  }
+
+  async generateSummaryPage(data) {
+    const { rutina, ejercicios, stats } = data
+    this.addPage()
+    this.currentY = this.margin
+    this.setColor(rutina?.muscleGroup)
+
+    this.addBackground(COLORS.gray50)
+    this.addText('RESUMEN DEL ENTRENAMIENTO', this.margin, this.currentY,
+      { size: 22, color: COLORS.black, style: 'bold' })
+    this.currentY += 14
+
+    this.addDivider(this.margin, this.currentY, this.contentWidth, this.currentColor, 3)
+    this.currentY += 16
+
+    const summaryItems = [
+      { label: 'Ejercicios Totales', value: `${data.ejercicios?.length || 0}`, icon: '🏋️', color: this.currentColor },
+      { label: 'Tiempo Estimado', value: `${data.stats?.tiempoEstimado || 0} min`, icon: '⏱️', color: '#3B82F6' },
+      { label: 'Grupos Musculares', value: `${data.stats?.gruposMusculares || 0}`, icon: '💪', color: '#22C55E' },
+      { label: 'Volumen Total', value: `${data.stats?.volumenTotal || 0} kg`, icon: '📊', color: '#F97316' },
+      { label: 'Series Totales', value: `${data.stats?.seriesTotales || 0}`, icon: '🔁', color: '#A855F7' },
+      { label: 'Repeticiones Totales', value: `${data.stats?.repeticionesTotales || 0}`, icon: '🎯', color: '#EC4899' },
+      { label: 'Videos Disponibles', value: `${data.ejercicios?.filter(e => e.videoUrl).length || 0}`, icon: '🎥', color: '#06B6D4' },
+      { label: 'Dificultad Promedio', value: `${data.stats?.dificultadPromedio || 'Media'}`, icon: '📈', color: '#F97316' },
+    ]
+
+    const cols = 2
+    const cardW = (this.contentWidth - 12) / cols
+    const cardH = 56
+
+    summaryItems.forEach((item, i) => {
+      const col = i % 2
+      const row = Math.floor(i / 2)
+      const x = this.margin + col * (cardW + 12)
+      const y = this.currentY + row * (cardH + 12)
+
+      this.addRoundedRect(x, y, cardW, 56, 16, COLORS.white, COLORS.gray200, 1)
+      this.addRoundedRect(x, y, cardW, 4, 2, item.color)
+
+      this.addIcon(item.icon, x + 16, y + 20, 20, item.color)
+      this.addText(item.value, x + 44, y + 18, { size: 18, color: COLORS.gray800, style: 'bold' })
+      this.addText(item.label, x + 44, y + 36, { size: 9, color: COLORS.gray500 })
+    })
+
+    this.currentY += Math.ceil(summaryItems.length / 2) * 68 + 20
+
+    if (data.rutina?.notas) {
+      this.addSectionTitle('NOTAS DEL ENTRENADOR', '📝')
+      this.addNoteCard(data.rutina.notas, '#FEF3C7', '#92400E', '📝')
+      this.currentY += 16
+    }
+
+    if (data.ejercicios?.some(e => e.videoUrl)) {
+      this.addSectionTitle('VIDEOS DISPONIBLES', '🎥')
+      this.currentY += 4
+
+      data.ejercicios.filter(e => e.videoUrl).forEach((e, i) => {
+        if (i > 5) return
+        this.addText(`${i + 1}. ${e.nombre}`, this.margin + 10, this.currentY,
+          { size: 10, color: COLORS.gray700 })
+        this.addText(e.videoUrl, this.margin + 10, this.currentY + 12,
+          { size: 8, color: COLORS.blue600, maxWidth: this.contentWidth - 20 })
+        this.currentY += 20
+      })
+    }
+  }
+
+  async generateExercisePages(data) {
+    const { ejercicios, rutina } = data
+    this.totalExercises = ejercicios?.length || 0
+
+    for (let i = 0; i < this.totalExercises; i++) {
+      this.currentExerciseIndex = i + 1
+      const ejercicio = ejercicios[i]
+      this.setColor(ejercicio.muscleGroup)
+
+      await this.generateExercisePage(ejercicio, i)
+    }
+  }
+
+  async generateExercisePage(ejercicio, index) {
+    this.addPage()
+    this.currentY = this.margin
+
+    const color = this.getColor(this.currentMuscle)
+    const icon = this.getIcon(this.currentMuscle)
+
+    this.addBackground(COLORS.gray50)
+
+    this.addRoundedRect(this.margin, this.currentY, this.contentWidth, 38, 16, this.currentColor)
+    this.addIcon(icon, this.margin + 16, this.currentY + 14, 16, COLORS.white)
+    this.addText(`EJERCICIO ${this.currentExerciseIndex} DE ${this.totalExercises}`, this.margin + 40, this.currentY + 12,
+      { size: 11, color: 'rgba(255,255,255,0.9)', style: 'normal' })
+    this.addText(ejercicio.nombre, this.margin + 40, this.currentY + 26,
+      { size: 18, color: COLORS.white, style: 'bold', maxWidth: this.contentWidth - 56 })
+
+    this.currentY += 54
+
+    const stats = [
+      { label: 'Series', value: `${ejercicio.series || 3}`, icon: '🔁', color: '#3B82F6' },
+      { label: 'Repeticiones', value: `${ejercicio.reps || '10'}`, icon: '🎯', color: '#22C55E' },
+      { label: 'Peso', value: `${ejercicio.peso || 0} kg`, icon: '⚖️', color: '#F97316' },
+      { label: 'Descanso', value: `${ejercicio.descanso || 120}s`, icon: '😴', color: '#A855F7' },
+      { label: 'Trabajo', value: `${ejercicio.tiempoTrabajo || 45}s`, icon: '⏱️', color: '#EC4899' },
+      { label: 'Intensidad', value: ejercicio.rpe || 'RPE 8', icon: '🔥', color: '#EF4444' },
+    ]
+
+    const statW = (this.contentWidth - 20) / 3
+    stats.forEach((stat, i) => {
+      const col = i % 3
+      const row = Math.floor(i / 3)
+      const x = this.margin + 10 + col * (statW + 6)
+      const y = this.currentY + row * 56
+
+      this.addRoundedRect(x, y, statW, 48, 12, COLORS.white, COLORS.gray200, 1)
+      this.addRoundedRect(x + 4, y + 4, statW - 8, 4, 2, stat.color)
+      this.addIcon(stat.icon, x + 12, y + 16, 16, stat.color)
+      this.addText(stat.label, x + 16, y + 16, { size: 9, color: COLORS.gray500 })
+      this.addText(stat.value, x + 16, y + 32, { size: 14, color: COLORS.gray800, style: 'bold' })
+    })
+
+    this.currentY += Math.ceil(stats.length / 3) * 56 + 16
+
+    if (ejercicio.descripcion) {
+      this.addSectionTitle('CÓMO REALIZAR EL EJERCICIO', '📖')
+      this.addText(ejercicio.descripcion, this.margin + 10, this.currentY,
+        { size: 11, color: COLORS.gray700, maxWidth: this.contentWidth - 20, lineHeight: 1.5 })
+      this.currentY += this.getTextHeight(ejercicio.descripcion, 11, this.contentWidth - 20, 1.5) + 16
+    }
+
+    if (ejercicio.consejos) {
+      this.addTipCard(ejercicio.consejos)
+      this.currentY += 16
+    }
+
+    if (ejercicio.advertencias) {
+      this.addWarningCard(ejercicio.advertencias)
+      this.currentY += 16
+    }
+
+    if (ejercicio.notas) {
+      this.addNoteCard(ejercicio.notas, COLORS.yellow50, COLORS.yellow600, '📝')
+      this.currentY += 16
+    }
+
+    this.addSectionTitle('SERIES REALIZADAS', '✅')
+    this.currentY += 4
+
+    for (let s = 1; s <= (ejercicio.series || 3); s++) {
+      this.addRoundedRect(this.margin + 10, this.currentY, this.contentWidth - 20, 28, 10, COLORS.white, COLORS.gray200, 1)
+      this.addRoundedRect(this.margin + 14, this.currentY + 4, 20, 20, 6, COLORS.gray100, COLORS.gray300, 1)
+      this.addIcon('☐', this.margin + 19, this.currentY + 15, 12, COLORS.gray400)
+      this.addText(`Serie ${s}`, this.margin + 42, this.currentY + 10, { size: 11, color: COLORS.gray700 })
+      this.addText(`${ejercicio.reps || 10} reps  ·  ${ejercicio.peso || 0} kg  ·  ${ejercicio.descanso || 120}s`,
+        this.margin + 42, this.currentY + 19, { size: 9, color: COLORS.gray500 })
+      this.currentY += 34
+    }
+
+    if (ejercicio.muscleImageUrl) {
+      this.currentY += 8
+      this.addSectionTitle('MÚSCULO TRABAJADO', '💪')
+      this.currentY += 4
+      const imgData = await this.addImageFromUrl(ejercicio.muscleImageUrl)
+      if (imgData) {
+        const imgW = this.contentWidth - 20
+        const imgH = imgW * 0.75
+        this.addRoundedRect(this.margin + 10, this.currentY, imgW, imgH, 12, COLORS.white, COLORS.gray200, 1)
+        try {
+          this.doc.addImage(imgData, 'PNG', this.margin + 14, this.currentY + 4, imgW - 8, imgH - 8)
+        } catch {}
+        this.currentY += imgH + 12
+      }
+    }
+
+    if (ejercicio.videoUrl) {
+      this.currentY += 8
+      this.addSectionTitle('VIDEO EXPLICATIVO', '🎥')
+      this.currentY += 4
+
+      const qrData = await this.generateQRCode(ejercicio.videoUrl)
+      this.addRoundedRect(this.margin + 10, this.currentY, this.contentWidth - 20, 120, 16, COLORS.white, COLORS.gray200, 1)
+
+      if (qrData) {
+        this.doc.addImage(qrData, 'PNG', this.margin + 24, this.currentY + 16, 88, 88)
+      }
+
+      this.addIcon('🎥', this.margin + 130, this.currentY + 28, 32, this.currentColor)
+      this.addText('Video Explicativo', this.margin + 170, this.currentY + 24, { size: 14, color: this.currentColor, style: 'bold' })
+      this.addText('Escanea el código QR', this.margin + 170, this.currentY + 36, { size: 10, color: COLORS.gray500 })
+      this.addText('para ver el video', this.margin + 170, this.currentY + 46, { size: 10, color: COLORS.gray500 })
+      this.addText(ejercicio.videoUrl, this.margin + 170, this.currentY + 60, { size: 8, color: COLORS.blue600, maxWidth: 120 })
+
+      this.addRoundedRect(this.margin + 170, this.currentY + 74, 100, 28, 8, this.currentColor)
+      this.addText('ESCANEAR', this.margin + 220, this.currentY + 86, { size: 11, color: COLORS.white, style: 'bold', align: 'center' })
+      this.currentY += 136
+    }
+
+    if (ejercicio.muscleGroup) {
+      this.currentY += 8
+      this.addText(`MÚSCULO PRINCIPAL: ${this.getIcon(ejercicio.muscleGroup)} ${ejercicio.muscleGroup.toUpperCase()}`,
+        this.margin + 10, this.currentY, { size: 11, color: this.currentColor, style: 'bold' })
+      if (ejercicio.musculosSecundarios) {
+        this.currentY += 16
+        this.addText(`Secundarios: ${ejercicio.musculosSecundarios}`, this.margin + 10, this.currentY,
+          { size: 9, color: COLORS.gray500 })
+      }
+    }
+  }
+
+  async generateFinalPage(data) {
+    this.addPage()
+    this.currentY = this.margin
+
+    this.addBackground(COLORS.gray50)
+    this.addText('ENTRENAMIENTO COMPLETADO', this.margin, this.currentY,
+      { size: 22, color: COLORS.black, style: 'bold' })
+    this.currentY += 14
+    this.addDivider(this.margin, this.currentY, this.contentWidth, this.currentColor, 3)
+    this.currentY += 16
+
+    this.addText('¡Excelente trabajo! Has completado tu entrenamiento.', this.margin, this.currentY,
+      { size: 12, color: COLORS.gray600, maxWidth: this.contentWidth })
+    this.currentY += 24
+
+    const finalStats = [
+      { label: 'Ejercicios Completados', value: `${data.ejercicios?.length || 0}`, icon: '✅' },
+      { label: 'Series Totales', value: `${data.stats?.seriesTotales || 0}`, icon: '🔁' },
+      { label: 'Repeticiones Totales', value: `${data.stats?.repeticionesTotales || 0}`, icon: '🎯' },
+      { label: 'Volumen Total', value: `${data.stats?.volumenTotal || 0} kg`, icon: '📊' },
+      { label: 'Tiempo Total', value: `${data.stats?.tiempoTotal || 0} min`, icon: '⏱️' },
+      { label: 'Calorías Estimadas', value: `${data.stats?.calorias || 0} kcal`, icon: '🔥' },
+    ]
+
+    const cols = 3
+    const cardW = (this.contentWidth - 16) / cols
+    const cardH = 50
+
+    data.ejercicios.forEach((e, i) => {
+      const col = i % 3
+      const row = Math.floor(i / 3)
+      const x = this.margin + 10 + col * (cardW + 6)
+      const y = this.currentY + row * 56
+
+      this.addRoundedRect(x, y, cardW, 48, 10, COLORS.white, COLORS.gray200, 1)
+      const color = this.getColor(e.muscleGroup).primary
+      this.addRoundedRect(x, y, cardW, 3, 2, color)
+      this.addText(e.nombre, x + 8, y + 16, { size: 9, color: COLORS.gray700, maxWidth: cardW - 16 })
+      this.addText(`${e.series}×${e.reps}  ·  ${e.peso}kg`, x + 8, y + 28, { size: 8, color: COLORS.gray500 })
+    })
+
+    this.currentY += Math.ceil(data.ejercicios.length / 3) * 56 + 20
+
+    if (data.rutina?.notas) {
+      this.addSectionTitle('NOTAS GENERALES', '📝')
+      this.addNoteCard(data.rutina.notas, COLORS.blue50, COLORS.blue600, '📝')
+      this.currentY += 16
+    }
+
+    this.addSectionTitle('OBSERVACIONES DEL ENTRENADOR', '📋')
+    this.currentY += 4
+
+    for (let i = 0; i < 5; i++) {
+      this.addRoundedRect(this.margin + 10, this.currentY, this.contentWidth - 20, 22, 8, COLORS.white, COLORS.gray200, 1)
+      this.addDottedDivider(this.margin + 18, this.currentY + 11, this.contentWidth - 36, COLORS.gray300)
+      this.currentY += 28
+    }
+
+    this.currentY += 16
+    this.addText('Firma del Entrenador: _________________________    Firma del Alumno: _________________________',
+      this.margin, this.currentY, { size: 9, color: COLORS.gray500 })
+    this.currentY += 12
+    this.addText(`Fecha: ${this.formatDate(new Date())}`, this.margin, this.currentY,
+      { size: 9, color: COLORS.gray500 })
+  }
+
+  addSectionTitle(title, icon = '') {
+    this.addIcon(icon, this.margin + 10, this.currentY, 14, this.currentColor)
+    this.addText(title, this.margin + 28, this.currentY, { size: 14, color: this.currentColor, style: 'bold' })
+    this.currentY += 4
+    this.addDivider(this.margin + 10, this.currentY, this.contentWidth - 20, this.currentColor, 2)
+    this.currentY += 12
+  }
+
+  addNoteCard(text, bgColor, textColor, icon) {
+    this.addRoundedRect(this.margin + 10, this.currentY, this.contentWidth - 20, 44, 12, bgColor)
+    this.addRoundedRect(this.margin + 10, this.currentY, 4, 44, 2, textColor)
+    this.addIcon(icon, this.margin + 18, this.currentY + 14, 14, textColor)
+    this.addText(text, this.margin + 38, this.currentY + 14,
+      { size: 10, color: textColor, maxWidth: this.contentWidth - 50, lineHeight: 1.5 })
+  }
+
+  addTipCard(text) {
+    this.addRoundedRect(this.margin + 10, this.currentY, this.contentWidth - 20, 40, 12, COLORS.blue50)
+    this.addRoundedRect(this.margin + 10, this.currentY, 4, 40, 2, COLORS.blue600)
+    this.addIcon('💡', this.margin + 18, this.currentY + 14, 14, COLORS.blue600)
+    this.addText('CONSEJO', this.margin + 38, this.currentY + 10, { size: 8, color: COLORS.blue600, style: 'bold' })
+    this.addText(text, this.margin + 38, this.currentY + 22, { size: 10, color: COLORS.blue600, maxWidth: this.contentWidth - 50 })
+  }
+
+  addWarningCard(text) {
+    this.addRoundedRect(this.margin + 10, this.currentY, this.contentWidth - 20, 40, 12, COLORS.red50)
+    this.addRoundedRect(this.margin + 10, this.currentY, 4, 40, 2, COLORS.red600)
+    this.addIcon('⚠', this.margin + 18, this.currentY + 14, 14, COLORS.red600)
+    this.addText('ATENCIÓN', this.margin + 38, this.currentY + 10, { size: 8, color: COLORS.red600, style: 'bold' })
+    this.addText(text, this.margin + 38, this.currentY + 22, { size: 10, color: COLORS.red600, maxWidth: this.contentWidth - 50 })
+  }
+
+  getTextHeight(text, fontSize, maxWidth, lineHeight = 1.4) {
+    const lines = this.doc.splitTextToSize(text, maxWidth)
+    return lines.length * fontSize * lineHeight
+  }
+
+  formatDate(date) {
+    if (!date) return ''
+    const d = new Date(date)
+    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
+  }
+
+  async generate(data) {
+    const { alumno, rutina, ejercicios } = data
+
+    const stats = {
+      tiempoEstimado: Math.round(ejercicios.reduce((acc, e) =>
+        acc + (e.series || 3) * (e.tiempoTrabajo || 45) / 60 + (e.descanso || 120) / 60, 0)),
+      gruposMusculares: [...new Set(ejercicios.map(e => e.muscleGroup).filter(Boolean))].length,
+      volumenTotal: ejercicios.reduce((acc, e) => acc + (e.series || 3) * (e.reps || 10) * (e.peso || 0), 0),
+      seriesTotales: ejercicios.reduce((acc, e) => acc + (e.series || 3), 0),
+      repeticionesTotales: ejercicios.reduce((acc, e) => acc + (e.series || 3) * (e.reps || 10), 0),
+      dificultadPromedio: 'Media',
+      volumenTotal: ejercicios.reduce((acc, e) => acc + (e.series || 3) * (e.reps || 10) * (e.peso || 0), 0),
+      tiempoTotal: Math.round(ejercicios.reduce((acc, e) =>
+        acc + (e.series || 3) * (e.tiempoTrabajo || 45) / 60 + (e.descanso || 120) / 60, 0)),
+      calorias: Math.round(ejercicios.reduce((acc, e) => acc + (e.series || 3) * (e.reps || 10) * (e.peso || 0) * 0.05, 0)),
+    }
+
+    await this.generateCoverPage({ alumno, rutina, ejercicios, stats })
+    await this.generateSummaryPage({ rutina, ejercicios, stats })
+    await this.generateExercisePages({ rutina, ejercicios })
+    await this.generateFinalPage({ rutina, ejercicios, stats })
+
+    const totalPages = this.doc.getNumberOfPages()
+    for (let i = 1; i <= totalPages; i++) {
+      this.doc.setPage(i)
+      this.addFooter(i, totalPages)
+    }
+
+    return this.doc.output('blob')
+  }
+}
+
+export async function generateWorkoutPDF(data) {
+  const generator = new PDFGenerator()
+  return await generator.generate(data)
+}
+
+export async function sharePDF(data) {
+  const blob = await generateWorkoutPDF(data)
+  const file = new File([blob], `Entrenamiento-${data.alumno?.nombre || 'Alumno'}-${new Date().toISOString().split('T')[0]}.pdf`, { type: 'application/pdf' })
+
+  if (navigator.share && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Plan de Entrenamiento', text: 'Tu plan de entrenamiento personalizado' })
       return true
     } catch (e) {
-      if (e.name !== 'AbortError') {
-        downloadBlob(blob, `Rutina-${alumno?.nombre || 'Alumno'}.pdf`)
-      }
+      if (e.name !== 'AbortError') downloadBlob(blob)
     }
   } else {
-    downloadBlob(blob, `Rutina-${alumno?.nombre || 'Alumno'}.pdf`)
+    downloadBlob(blob)
   }
   return false
 }
@@ -578,7 +714,34 @@ function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = filename
+  a.download = filename || `Entrenamiento-${new Date().toISOString().split('T')[0]}.pdf`
   a.click()
   URL.revokeObjectURL(url)
 }
+
+// Backward compatibility exports
+export async function generateRoutinePDF(rutina, alumno, items, ejercicios) {
+  const data = {
+    alumno,
+    rutina: { ...rutina, muscleGroup: rutina.muscleGroup || items?.[0]?.muscleGroup },
+    ejercicios: items.map(item => {
+      const ej = ejercicios.find(e => e.id === item.ejercicioId)
+      return { ...ej, ...item }
+    })
+  }
+  return await generateWorkoutPDF(data)
+}
+
+export async function shareRoutinePDF(rutina, alumno, items, ejercicios) {
+  const data = {
+    alumno,
+    rutina: { ...rutina, muscleGroup: rutina.muscleGroup || items?.[0]?.muscleGroup },
+    ejercicios: items.map(item => {
+      const ej = ejercicios.find(e => e.id === item.ejercicioId)
+      return { ...ej, ...item }
+    })
+  }
+  return await sharePDF(data)
+}
+
+export default PDFGenerator
