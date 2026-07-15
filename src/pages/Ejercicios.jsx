@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Search, Plus, Trash2, Edit, X, Copy } from 'lucide-react'
+import { Search, Plus, Trash2, Edit, X, Copy, RefreshCw, AlertTriangle } from 'lucide-react'
 import { useAppStore } from '../stores/useAppStore'
 
 const CATEGORIAS = [
@@ -10,13 +10,27 @@ const CATEGORIAS = [
 const DIFICULTADES = ['Principiante', 'Intermedio', 'Avanzado']
 
 export default function Ejercicios() {
-  const { ejercicios, addEjercicio, deleteEjercicio } = useAppStore()
+  const { ejercicios, addEjercicio, deleteEjercicio, reimportEjercicios } = useAppStore()
   const [search, setSearch] = useState('')
   const [filterCat, setFilterCat] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editando, setEditando] = useState(null)
+  const [reimporting, setReimporting] = useState(false)
   const emptyForm = { nombre: '', descripcion: '', categoria: '', dificultad: 'Intermedio', duracion: '', reps: '', series: '3', descanso: '60', videoUrl: '', observaciones: '' }
   const [form, setForm] = useState(emptyForm)
+
+  const handleReimport = async () => {
+    if (!confirm('¿Reimportar los 1,324 ejercicios del dataset? Se borrarán tus ejercicios personalizados.')) return
+    setReimporting(true)
+    try {
+      const count = await reimportEjercicios()
+      alert(`¡Importados ${count} ejercicios!`)
+    } catch (e) {
+      alert('Error: ' + e.message)
+    } finally {
+      setReimporting(false)
+    }
+  }
 
   const filtered = ejercicios.filter(e => {
     const matchSearch = e.nombre?.toLowerCase().includes(search.toLowerCase())
@@ -72,9 +86,14 @@ export default function Ejercicios() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-extrabold">Ejercicios</h2>
-        <button onClick={() => { setEditando(null); setForm(emptyForm); setShowForm(true) }} className="bg-gym-orange text-white px-4 py-2 rounded-xl font-medium text-sm flex items-center gap-2">
-          <Plus size={16} /> Nuevo
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={handleReimport} disabled={reimporting} className="p-2 rounded-xl bg-gym-dark-card hover:bg-gym-dark-border transition-colors text-gray-400 hover:text-gym-orange" title="Reimportar dataset (1,324 ejercicios)">
+            <RefreshCw size={18} className={reimporting ? 'animate-spin' : ''} />
+          </button>
+          <button onClick={() => { setEditando(null); setForm(emptyForm); setShowForm(true) }} className="bg-gym-orange text-white px-4 py-2 rounded-xl font-medium text-sm flex items-center gap-2">
+            <Plus size={16} /> Nuevo
+          </button>
+        </div>
       </div>
 
       <div className="relative">

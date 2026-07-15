@@ -54,6 +54,13 @@ const useAppStore = create(
         await db.ejercicios.delete(id)
         await get().loadEjercicios()
       },
+      reimportEjercicios: async () => {
+        await db.ejercicios.clear()
+        const { importExercisesFromDataset } = await import('../lib/importDataset')
+        const count = await importExercisesFromDataset()
+        await get().loadEjercicios()
+        return count
+      },
 
       // Rutinas
       rutinas: [],
