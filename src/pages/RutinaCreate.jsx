@@ -149,29 +149,42 @@ const [observaciones, setObservaciones] = useState('')
       showToast('Selecciona un alumno y ponle nombre a la rutina', 'error')
       return
     }
-    console.log('addRutina:', addRutina, 'addEjercicioToRutina:', addEjercicioToRutina)
-    const rutinaId = await addRutina({
-      alumnoId: Number(selectedAlumno),
-      nombre,
-      objetivo,
-      observaciones,
-    })
-    console.log('rutinaId:', rutinaId)
-    for (let i = 0; i < exerciseItems.length; i++) {
-      const item = exerciseItems[i]
-      await addEjercicioToRutina({
-        rutinaId,
-        ejercicioId: item.ejercicioId,
-        orden: i + 1,
-        series: Number(item.series) || 3,
-        reps: item.reps,
-        peso: item.peso,
-        tiempoDescanso: Number(item.tiempoDescanso) || 60,
-        notas: item.notas,
+    try {
+      console.log('addRutina:', addRutina, 'addEjercicioToRutina:', addEjercicioToRutina)
+      if (typeof addRutina !== 'function') {
+        showToast('Error: addRutina no está disponible', 'error')
+        return
+      }
+      if (typeof addEjercicioToRutina !== 'function') {
+        showToast('Error: addEjercicioToRutina no está disponible', 'error')
+        return
+      }
+      const rutinaId = await addRutina({
+        alumnoId: Number(selectedAlumno),
+        nombre,
+        objetivo,
+        observaciones,
       })
+      console.log('rutinaId:', rutinaId)
+      for (let i = 0; i < exerciseItems.length; i++) {
+        const item = exerciseItems[i]
+        await addEjercicioToRutina({
+          rutinaId,
+          ejercicioId: item.ejercicioId,
+          orden: i + 1,
+          series: Number(item.series) || 3,
+          reps: item.reps,
+          peso: item.peso,
+          tiempoDescanso: Number(item.tiempoDescanso) || 60,
+          notas: item.notas,
+        })
+      }
+      showToast('Rutina creada correctamente', 'success')
+      navigate(`/rutinas/${rutinaId}`)
+    } catch (error) {
+      console.error('Error al crear rutina:', error)
+      showToast('Error al crear rutina: ' + error.message, 'error')
     }
-    showToast('Rutina creada correctamente', 'success')
-    navigate(`/rutinas/${rutinaId}`)
   }
 
   return (
