@@ -299,7 +299,16 @@ const [observaciones, setObservaciones] = useState('')
                       style={{ cursor: 'pointer' }}
                     >
                   {ej.imagen ? (
-                    <img src={ej.imagen} alt={ej.nombre} className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gym-dark" onError={e => { e.target.style.display = 'none' }} />
+                    <img 
+                      src={ej.imagen} 
+                      alt={ej.nombre} 
+                      className="w-10 h-10 rounded-lg object-cover flex-shrink-0 bg-gym-dark" 
+                      onError={e => { 
+                        console.error('Error cargando imagen:', ej.nombre, ej.imagen, e); 
+                        e.target.style.display = 'none'; 
+                      }} 
+                      onLoad={() => console.log('Imagen cargada OK:', ej.nombre, ej.imagen)}
+                    />
                   ) : null}
                   <div className={`w-10 h-10 rounded-lg bg-gym-orange/10 flex items-center justify-center text-gym-orange text-xs font-bold flex-shrink-0 ${ej.imagen ? 'hidden' : ''}`}>
                     {ej.categoria?.charAt(0) || '?'}

@@ -130,9 +130,10 @@ export default function Ejercicios() {
                   alt={ej.nombre}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   onError={e => { 
-                    console.warn('GIF failed:', ej.gif)
+                    console.error('Error cargando GIF:', ej.nombre, ej.gif, e); 
                     e.target.style.display = 'none' 
                   }}
+                  onLoad={() => console.log('GIF cargado OK:', ej.nombre, ej.gif)}
                 />
               ) : ej.imagen ? (
                 <img
@@ -140,9 +141,10 @@ export default function Ejercicios() {
                   alt={ej.nombre}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   onError={e => { 
-                    console.warn('Image failed:', ej.imagen)
+                    console.error('Error cargando imagen:', ej.nombre, ej.imagen, e); 
                     e.target.style.display = 'none' 
                   }}
+                  onLoad={() => console.log('Imagen cargada OK:', ej.nombre, ej.imagen)}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-gray-500">

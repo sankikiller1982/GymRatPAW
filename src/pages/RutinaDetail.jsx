@@ -144,8 +144,27 @@ export default function RutinaDetail() {
             return (
               <div key={item.id} className="bg-gym-dark-card border border-gym-dark-border rounded-xl p-4">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-gym-orange/10 flex items-center justify-center text-gym-orange text-xs font-bold flex-shrink-0">
-                    {idx + 1}
+                  {/* Imagen/GIF del ejercicio */}
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-gym-dark flex-shrink-0 relative">
+                    {ej?.gif ? (
+                      <img
+                        src={ej.gif}
+                        alt={ej.nombre}
+                        className="w-full h-full object-cover"
+                        onError={e => { e.target.style.display = 'none' }}
+                      />
+                    ) : ej?.imagen ? (
+                      <img
+                        src={ej.imagen}
+                        alt={ej.nombre}
+                        className="w-full h-full object-cover"
+                        onError={e => { e.target.style.display = 'none' }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-500">
+                        <span className="text-2xl font-bold opacity-20">{ej?.categoria?.charAt(0) || '?'}</span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm truncate">{ej?.nombre || 'Ejercicio'}</p>
