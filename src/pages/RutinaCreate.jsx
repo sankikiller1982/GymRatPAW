@@ -68,6 +68,8 @@ const [observaciones, setObservaciones] = useState('')
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 10 } }))
 
+  let nextTempId = 0
+
   const CATEGORIAS = [
     'Pecho', 'Espalda', 'Piernas', 'Glúteos', 'Hombros',
     'Bíceps', 'Tríceps', 'Core', 'Cardio', 'Movilidad', 'Personalizado'
