@@ -149,12 +149,14 @@ const [observaciones, setObservaciones] = useState('')
       showToast('Selecciona un alumno y ponle nombre a la rutina', 'error')
       return
     }
+    console.log('addRutina:', addRutina, 'addEjercicioToRutina:', addEjercicioToRutina)
     const rutinaId = await addRutina({
       alumnoId: Number(selectedAlumno),
       nombre,
       objetivo,
       observaciones,
     })
+    console.log('rutinaId:', rutinaId)
     for (let i = 0; i < exerciseItems.length; i++) {
       const item = exerciseItems[i]
       await addEjercicioToRutina({
