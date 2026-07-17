@@ -6,7 +6,7 @@ import { exportToCSV, exportToSingleCSV, syncToGoogleSheets } from '../lib/googl
 
 export default function Exportar() {
   const navigate = useNavigate()
-  const { alumnos, ejercicios, rutinas, sesiones } = useAppStore()
+  const { alumnos, ejercicios, rutinas, sesiones, showToast } = useAppStore()
   const [tab, setTab] = useState('csv')
   const [syncing, setSyncing] = useState(false)
   const [syncResult, setSyncResult] = useState(null)
@@ -16,15 +16,17 @@ export default function Exportar() {
 
   const handleExportCSV = async () => {
     await exportToCSV(alumnos, ejercicios, rutinas)
+    showToast('Archivos CSV exportados', 'success')
   }
 
   const handleExportSingle = async () => {
     await exportToSingleCSV(alumnos, ejercicios, rutinas)
+    showToast('CSV único exportado', 'success')
   }
 
   const handleSync = async () => {
     if (!spreadsheetId.trim()) {
-      alert('Ingresá el ID de la hoja de cálculo')
+      showToast('Ingresá el ID de la hoja de cálculo', 'error')
       return
     }
     setSyncing(true)
@@ -39,8 +41,10 @@ export default function Exportar() {
         sesiones,
       })
       setSyncResult({ success: true, message: '¡Sincronización exitosa! Datos subidos a Google Sheets.' })
+      showToast('Sincronización exitosa', 'success')
     } catch (e) {
       setSyncResult({ success: false, message: `Error: ${e.message}` })
+      showToast('Error en sincronización: ' + e.message, 'error')
     }
     setSyncing(false)
   }

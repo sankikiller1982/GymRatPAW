@@ -10,10 +10,13 @@ const useAppStore = create(
       currentView: 'dashboard',
       theme: 'dark',
       language: 'es',
+      toast: null,
       toggleSidebar: () => set(s => ({ sidebarOpen: !s.sidebarOpen })),
       setView: (view) => set({ currentView: view, sidebarOpen: false }),
       setTheme: (theme) => set({ theme }),
       setLanguage: (language) => set({ language }),
+      showToast: (msg, type = 'info') => set({ toast: { msg, type } }),
+      clearToast: () => set({ toast: null }),
 
       // Alumnos
       alumnos: [],

@@ -13,7 +13,7 @@ const STORAGE_KEY = 'workout-session-'
 export default function WorkoutMode() {
   const { rutinaId } = useParams()
   const navigate = useNavigate()
-  const { rutinas, ejercicios, addSesion } = useAppStore()
+  const { rutinas, ejercicios, addSesion, showToast } = useAppStore()
   const [items, setItems] = useState([])
   const [currentIdx, setCurrentIdx] = useState(0)
   const [currentSeries, setCurrentSeries] = useState(0)
@@ -183,6 +183,7 @@ export default function WorkoutMode() {
         }))
       })
     }
+    showToast('Entrenamiento finalizado', 'success')
     localStorage.removeItem(STORAGE_KEY + rutinaId)
     navigate(-1)
   }

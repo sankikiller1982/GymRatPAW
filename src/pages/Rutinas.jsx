@@ -3,7 +3,7 @@ import { Plus, ClipboardList, Trash2, User } from 'lucide-react'
 import { useAppStore } from '../stores/useAppStore'
 
 export default function Rutinas() {
-  const { rutinas, alumnos, deleteRutina } = useAppStore()
+  const { rutinas, alumnos, deleteRutina, showToast } = useAppStore()
   const navigate = useNavigate()
 
   const sorted = [...rutinas].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -16,6 +16,7 @@ export default function Rutinas() {
   const handleDelete = async (id) => {
     if (confirm('¿Eliminar esta rutina y todos sus ejercicios?')) {
       await deleteRutina(id)
+      showToast('Rutina eliminada', 'success')
     }
   }
 
